@@ -8,6 +8,13 @@ is dropped and counted rather than allowed to block the person being redirected.
 
 **Go 1.26 · Fiber · GORM · PostgreSQL · Redis · Prometheus · React · Docker**
 
+| | |
+|---|---|
+| ![The public shortener](docs/screenshots/01-shorten.png) | ![The operations dashboard](docs/screenshots/05-dashboard.png) |
+| The public shortener — every figure is read live from the running process | The operations dashboard — gauges poll every 2s, aggregates every 30s |
+| ![The register](docs/screenshots/06-links.png) | ![Per-link analytics](docs/screenshots/07-analytics.png) |
+| The register — sorted, filtered and paginated in the browser | Per-link analytics — cache state counts down against the real Redis TTL |
+
 ---
 
 ## Architecture
