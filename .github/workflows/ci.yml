@@ -16,25 +16,76 @@ jobs:
           POSTGRES_USER: goshort
           POSTGRES_PASSWORD: goshort
           POSTGRES_DB: goshort
-        ports:
-          - 5432:5432
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U goshort -d goshort"
-          --health-interval 3s
-          --health-timeout 3s
-          --health-retries 20
+          --health-interval 3s --health-timeout 3s --health-retries 20
 
     env:
       TEST_DATABASE_URL: postgres://goshort:goshort@localhost:5432/goshort?sslmode=disable
 
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: web/package-lock.json }
+      - run: npm ci
+        working-directory: web
+      # dist/ ถูก embed เข้า binary จึงต้อง build ก่อน go test ไม่งั้น go:embed ล้ม
+      - run: npm run build
+        working-directory: web
       - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-          cache: true
+        with: { go-version: "1.26", cache: true }
       - run: go vet ./...
       - run: go test -race -cover ./...
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: goshort
+          POSTGRES_PASSWORD: goshort
+          POSTGRES_DB: goshort
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U goshort -d goshort"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 3s --health-retries 20
+
+    env:
+      DATABASE_URL: postgres://goshort:goshort@localhost:5432/goshort?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: ci-secret
+      ADMIN_EMAIL: admin@goshort.dev
+      ADMIN_PASSWORD: goshort-demo
+      PORT: "8099"
+      GOSHORT_DEV: "1"
+      GOSHORT_URL: http://localhost:8099
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.26", cache: true }
+      - run: npm ci && npm run build
+        working-directory: web
+      - run: go run ./cmd/seed
+      - name: start api
+        run: |
+          go build -o /tmp/goshort-api ./cmd/api
+          nohup /tmp/goshort-api > /tmp/api.log 2>&1 &
+          for _ in $(seq 1 40); do curl -sf localhost:8099/health >/dev/null && exit 0; sleep 1; done
+          cat /tmp/api.log; exit 1
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: e2e
+      - run: npx playwright test
+        working-directory: e2e
 
   image:
     runs-on: ubuntu-latest

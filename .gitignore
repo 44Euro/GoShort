@@ -10,7 +10,8 @@ AGENT.md
 *.local
 
 bin/
-web/dist/
+web/dist/*
+!web/dist/.gitkeep
 web/node_modules/
 node_modules/
 e2e/test-results/
