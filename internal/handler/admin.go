@@ -47,4 +47,5 @@ func registerAdmin(app *fiber.App, d Deps) {
 	})
 
 	registerAdminLinks(guarded, d)
+	registerAdminAnalytics(guarded, d)
 }
