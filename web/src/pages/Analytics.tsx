@@ -20,19 +20,32 @@ export function Analytics() {
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const load = () => {
+  // ต้องล้าง data ทิ้งตอนเปลี่ยน code ไม่งั้นตัวเลขของลิงก์เดิมจะค้างอยู่ใต้หัวข้อ
+  // ของลิงก์ใหม่ และคำตอบที่มาช้ากว่าการเปลี่ยนหน้าต้องถูกทิ้ง ไม่ใช่เขียนทับ
+  useEffect(() => {
     if (!code) return;
+    let alive = true;
+
+    setData(null);
+    setState("loading");
+
     api
       .get<Data>(`/api/admin/links/${encodeURIComponent(code)}/analytics`)
       .then((d) => {
+        if (!alive) return;
         setData(d);
         setTtl(d.cache.ttl_seconds);
         setState("ready");
       })
-      .catch((err) => setState(err instanceof ApiError && err.status === 404 ? "missing" : "error"));
-  };
+      .catch((err) => {
+        if (!alive) return;
+        setState(err instanceof ApiError && err.status === 404 ? "missing" : "error");
+      });
 
-  useEffect(load, [code]);
+    return () => {
+      alive = false;
+    };
+  }, [code]);
 
   useEffect(() => {
     if (!data?.cache.warm) return;

@@ -45,8 +45,12 @@ function AdminLayout() {
       <AdminNav
         email={email}
         onSignOut={async () => {
-          await signOut();
-          nav("/", { replace: true });
+          // session ที่หมดอายุไปแล้วทำให้ logout ล้มได้ แต่ผู้ใช้ก็ยังต้องออกจากระบบ
+          try {
+            await signOut();
+          } finally {
+            nav("/", { replace: true });
+          }
         }}
       />
       <Outlet />

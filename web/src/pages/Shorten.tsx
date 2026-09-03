@@ -28,6 +28,10 @@ export function Shorten() {
   const stats = usePoll<PublicStats>(() => api.get<PublicStats>("/api/stats/public"), 5000);
   const s = stats.data;
 
+  // ปล่อยให้ error ค้างอยู่ระหว่างที่ผู้ใช้กำลังแก้ตรงจุดที่ผิด อ่านแล้วสับสน
+  const clearError = (field: keyof Errors) =>
+    setErrors((prev) => (prev[field] || prev.form ? { ...prev, [field]: undefined, form: undefined } : prev));
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -86,7 +90,10 @@ export function Shorten() {
                 className="input input-rule"
                 placeholder="https://example.com/a/very/long/path"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  clearError("url");
+                }}
                 aria-invalid={!!errors.url}
               />
               {errors.url && <div className="field-error">{errors.url}</div>}
@@ -104,7 +111,10 @@ export function Shorten() {
                 className="input input-rule"
                 placeholder="my-code"
                 value={alias}
-                onChange={(e) => setAlias(e.target.value)}
+                onChange={(e) => {
+                  setAlias(e.target.value);
+                  clearError("alias");
+                }}
                 aria-invalid={!!errors.alias}
               />
               {errors.alias && <div className="field-error">{errors.alias}</div>}

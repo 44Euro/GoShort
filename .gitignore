@@ -19,3 +19,4 @@ e2e/playwright-report/
 
 .DS_Store
 web/*.tsbuildinfo
+e2e/mobile/

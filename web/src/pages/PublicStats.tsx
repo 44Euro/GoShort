@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { ApiError, api, type LinkStats } from "../api";
-import { DailyBars, ReferrerBars } from "../components/Charts";
+import { DailyBars, Empty, ReferrerBars } from "../components/Charts";
 import { Brand } from "../components/Nav";
 import { NotFound } from "./NotFound";
 
@@ -15,6 +15,7 @@ export function PublicStats() {
     if (!code) return;
     let alive = true;
     setStatus("loading");
+    setData(null);
     api
       .get<LinkStats>(`/api/links/${encodeURIComponent(code)}/stats`)
       .then((d) => {
@@ -74,7 +75,7 @@ export function PublicStats() {
         )}
 
         <div style={{ marginTop: 34 }}>
-          <DailyBars points={data?.series ?? []} height={120} />
+          {status === "loading" ? <Empty label="loading" /> : <DailyBars points={data?.series ?? []} height={120} />}
         </div>
         <div
           className="mono muted"
@@ -85,7 +86,7 @@ export function PublicStats() {
 
         <div style={{ marginTop: 54, textAlign: "left" }}>
           <div className="section-rule">Where the clicks came from</div>
-          <ReferrerBars items={data?.referrers ?? []} />
+          {status === "loading" ? <Empty label="loading" /> : <ReferrerBars items={data?.referrers ?? []} />}
         </div>
       </div>
     </div>
