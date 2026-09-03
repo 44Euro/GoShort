@@ -1,0 +1,142 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: load-test/redirect.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 1m0s max duration (incl. graceful stop):
+              * redirects: 100 looping VUs for 30s (gracefulStop: 30s)
+
+
+running (0m01.0s), 100/100 VUs, 39967 complete and 0 interrupted iterations
+redirects   [   3% ] 100 VUs  01.0s/30s
+
+running (0m02.0s), 100/100 VUs, 85980 complete and 0 interrupted iterations
+redirects   [   7% ] 100 VUs  02.0s/30s
+
+running (0m03.0s), 100/100 VUs, 129664 complete and 0 interrupted iterations
+redirects   [  10% ] 100 VUs  03.0s/30s
+
+running (0m04.0s), 100/100 VUs, 174726 complete and 0 interrupted iterations
+redirects   [  13% ] 100 VUs  04.0s/30s
+
+running (0m05.0s), 100/100 VUs, 218768 complete and 0 interrupted iterations
+redirects   [  17% ] 100 VUs  05.0s/30s
+
+running (0m06.0s), 100/100 VUs, 260114 complete and 0 interrupted iterations
+redirects   [  20% ] 100 VUs  06.0s/30s
+
+running (0m07.0s), 100/100 VUs, 308484 complete and 0 interrupted iterations
+redirects   [  23% ] 100 VUs  07.0s/30s
+
+running (0m08.0s), 100/100 VUs, 355129 complete and 0 interrupted iterations
+redirects   [  27% ] 100 VUs  08.0s/30s
+
+running (0m09.0s), 100/100 VUs, 402341 complete and 0 interrupted iterations
+redirects   [  30% ] 100 VUs  09.0s/30s
+
+running (0m10.0s), 100/100 VUs, 450831 complete and 0 interrupted iterations
+redirects   [  33% ] 100 VUs  10.0s/30s
+
+running (0m11.0s), 100/100 VUs, 496877 complete and 0 interrupted iterations
+redirects   [  37% ] 100 VUs  11.0s/30s
+
+running (0m12.0s), 100/100 VUs, 543061 complete and 0 interrupted iterations
+redirects   [  40% ] 100 VUs  12.0s/30s
+
+running (0m13.0s), 100/100 VUs, 588828 complete and 0 interrupted iterations
+redirects   [  43% ] 100 VUs  13.0s/30s
+
+running (0m14.0s), 100/100 VUs, 637513 complete and 0 interrupted iterations
+redirects   [  47% ] 100 VUs  14.0s/30s
+
+running (0m15.0s), 100/100 VUs, 680224 complete and 0 interrupted iterations
+redirects   [  50% ] 100 VUs  15.0s/30s
+
+running (0m16.0s), 100/100 VUs, 723722 complete and 0 interrupted iterations
+redirects   [  53% ] 100 VUs  16.0s/30s
+
+running (0m17.0s), 100/100 VUs, 771725 complete and 0 interrupted iterations
+redirects   [  57% ] 100 VUs  17.0s/30s
+
+running (0m18.0s), 100/100 VUs, 816199 complete and 0 interrupted iterations
+redirects   [  60% ] 100 VUs  18.0s/30s
+
+running (0m19.0s), 100/100 VUs, 864911 complete and 0 interrupted iterations
+redirects   [  63% ] 100 VUs  19.0s/30s
+
+running (0m20.0s), 100/100 VUs, 914496 complete and 0 interrupted iterations
+redirects   [  67% ] 100 VUs  20.0s/30s
+
+running (0m21.0s), 100/100 VUs, 962456 complete and 0 interrupted iterations
+redirects   [  70% ] 100 VUs  21.0s/30s
+
+running (0m22.0s), 100/100 VUs, 1012254 complete and 0 interrupted iterations
+redirects   [  73% ] 100 VUs  22.0s/30s
+
+running (0m23.0s), 100/100 VUs, 1060372 complete and 0 interrupted iterations
+redirects   [  77% ] 100 VUs  23.0s/30s
+
+running (0m24.0s), 100/100 VUs, 1107450 complete and 0 interrupted iterations
+redirects   [  80% ] 100 VUs  24.0s/30s
+
+running (0m25.0s), 100/100 VUs, 1154234 complete and 0 interrupted iterations
+redirects   [  83% ] 100 VUs  25.0s/30s
+
+running (0m26.0s), 100/100 VUs, 1204524 complete and 0 interrupted iterations
+redirects   [  87% ] 100 VUs  26.0s/30s
+
+running (0m27.0s), 100/100 VUs, 1244322 complete and 0 interrupted iterations
+redirects   [  90% ] 100 VUs  27.0s/30s
+
+running (0m28.0s), 100/100 VUs, 1289920 complete and 0 interrupted iterations
+redirects   [  93% ] 100 VUs  28.0s/30s
+
+running (0m29.0s), 100/100 VUs, 1338255 complete and 0 interrupted iterations
+redirects   [  97% ] 100 VUs  29.0s/30s
+
+running (0m30.0s), 100/100 VUs, 1384012 complete and 0 interrupted iterations
+redirects   [ 100% ] 100 VUs  30.0s/30s
+
+
+  █ THRESHOLDS 
+
+    http_req_failed
+    ✓ 'rate<0.01' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 1384544 46145.609251/s
+    checks_succeeded...: 100.00% 1384544 out of 1384544
+    checks_failed......: 0.00%   0 out of 1384544
+
+    ✓ 302
+
+    HTTP
+    http_req_duration..............: avg=2.05ms med=1.89ms p(95)=3.58ms p(99)=5.9ms max=61.72ms
+      { expected_response:true }...: avg=2.05ms med=1.89ms p(95)=3.58ms p(99)=5.9ms max=61.72ms
+    http_req_failed................: 0.00%   0 out of 1384544
+    http_reqs......................: 1384544 46145.609251/s
+
+    EXECUTION
+    iteration_duration.............: avg=2.15ms med=1.95ms p(95)=3.8ms  p(99)=7ms   max=82.36ms
+    iterations.....................: 1384544 46145.609251/s
+    vus............................: 100     min=100          max=100
+    vus_max........................: 100     min=100          max=100
+
+    NETWORK
+    data_received..................: 163 MB  5.4 MB/s
+    data_sent......................: 107 MB  3.6 MB/s
+
+
+
+
+running (0m30.0s), 000/100 VUs, 1384544 complete and 0 interrupted iterations
+redirects ✓ [ 100% ] 100 VUs  30s

@@ -13,6 +13,7 @@ export function PublicNav() {
     <div className="nav">
       <Brand />
       <span className="nav-spacer" />
+      <Link to="/s">Look up a code</Link>
       <Link to="/login">Administration</Link>
     </div>
   );

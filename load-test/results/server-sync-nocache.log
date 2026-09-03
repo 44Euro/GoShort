@@ -1,0 +1,4 @@
+2026/09/03 15:19:31 goshort listening on :8099 — SYNC MODE (no cache, synchronous writes), 8 workers, buffer 1000
+2026/09/03 15:20:02 shutting down
+2026/09/03 15:20:02 click writer drained, 0 events written
+2026/09/03 15:20:02 bye
