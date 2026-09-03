@@ -35,8 +35,12 @@ type Config struct {
 	// เชื่อ X-Forwarded-For เฉพาะเมื่อรู้ว่ามี proxy จริงคั่นอยู่ ไม่งั้นใครก็
 	// ปลอม header นี้เพื่อรีเซ็ตโควตา rate limit ของตัวเองได้
 	TrustProxy bool
+}
 
-	Dev bool
+// อ่านจาก scheme ของ BASE_URL แทนที่จะให้ตั้ง flag แยก — ตั้ง Secure บน http
+// ทำให้ Safari ทิ้ง cookie เงียบ ๆ และ docker-compose ก็รันบน http://localhost
+func (c Config) SecureCookies() bool {
+	return strings.HasPrefix(c.BaseURL, "https://")
 }
 
 func Load() (Config, error) {
@@ -59,7 +63,6 @@ func Load() (Config, error) {
 		AggregateCacheTTL: envDuration("AGGREGATE_CACHE_TTL", 60*time.Second),
 		SyncMode:          envBool("GOSHORT_SYNC_MODE", false),
 		TrustProxy:        envBool("TRUST_PROXY", false),
-		Dev:               envBool("GOSHORT_DEV", false),
 	}
 
 	if c.DatabaseURL == "" {

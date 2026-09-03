@@ -123,7 +123,7 @@ Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are t
 
 ---
 
-## Three bugs the tests found
+## Bugs the tests found
 
 **Request headers were being corrupted.** Values from `c.Get()` point into a buffer that fasthttp
 recycles the moment the handler returns. Passing them straight into the click channel meant the
@@ -140,6 +140,11 @@ open. The race detector caught the write-after-return. Every database and Redis 
 Postgres' `max_connections`, and redirects started returning `500`. `SetMaxOpenConns` and friends are
 now configured, so load queues on the pool instead of failing — which is also the clearest argument
 for the cache: it keeps that traffic off the pool entirely.
+
+**Expired links kept redirecting for an hour.** The expiry check lived only on the Postgres path, so
+a link cached while still valid went on answering `302` until the cache entry aged out. The test that
+was supposed to cover this only exercised a cold cache. The entry now carries `ExpiresAt`, and the
+Redis key's TTL is capped at whatever is left of the link's life.
 
 ---
 

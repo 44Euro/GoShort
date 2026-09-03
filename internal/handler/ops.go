@@ -1,9 +1,13 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"goshort/internal/middleware"
 )
 
 func registerOps(app *fiber.App, d Deps) {
@@ -31,14 +35,19 @@ func registerOps(app *fiber.App, d Deps) {
 		promhttp.HandlerFor(d.Metrics.Registry(), promhttp.HandlerOpts{}),
 	))
 
-	app.Get("/api/stats/public", func(c *fiber.Ctx) error {
-		d.syncPoolCounters()
-		s := d.Metrics.Summary()
-		return c.JSON(fiber.Map{
-			"cache_hit_rate":  s.CacheHitRate,
-			"p99_redirect_ms": s.P99Millis,
-			"dropped_events":  s.Dropped,
-			"total_clicks":    d.totalClicks(c),
+	app.Get("/api/stats/public",
+		middleware.RateLimit(d.Redis, "public-stats", 120, time.Minute),
+		func(c *fiber.Ctx) error {
+			s := d.Metrics.Summary()
+			total, err := d.totalClicks(c)
+			if err != nil {
+				return err
+			}
+			return c.JSON(fiber.Map{
+				"cache_hit_rate":  s.CacheHitRate,
+				"p99_redirect_ms": s.P99Millis,
+				"dropped_events":  s.Dropped,
+				"total_clicks":    total,
+			})
 		})
-	})
 }

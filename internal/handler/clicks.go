@@ -35,7 +35,7 @@ func (d Deps) recordClick(c *fiber.Ctx, link model.Link) {
 	if d.Cfg.SyncMode {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = d.Clicks.WriteBatchNow(ctx, e)
+		_ = d.Clicks.WriteBatch(ctx, []worker.Event{e})
 		return
 	}
 

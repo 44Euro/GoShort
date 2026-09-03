@@ -7,9 +7,9 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"goshort/internal/cache"
 	"goshort/internal/config"
 	"goshort/internal/metrics"
-	"goshort/internal/model"
 	"goshort/internal/repository"
 	"goshort/internal/worker"
 )
@@ -22,11 +22,25 @@ type Deps struct {
 	Pool    *worker.Pool
 	Clicks  *repository.ClickStore
 	Metrics *metrics.Metrics
+
+	links  *repository.LinkRepo
+	stats  *repository.StatsRepo
+	admins *repository.AdminRepo
+	cache  *cache.LinkCache
+	index  []byte
 }
 
 // ลำดับการลงทะเบียนสำคัญ: Fiber match ตามลำดับ และ GET /:code เป็น wildcard
 // ที่ root มันจะกินทุก path ที่ลงทะเบียนทีหลัง จึงต้องอยู่ท้ายสุดเสมอ
 func New(d Deps) *fiber.App {
+	d.links = repository.NewLinkRepo(d.DB)
+	d.stats = repository.NewStatsRepo(d.DB)
+	d.admins = repository.NewAdminRepo(d.DB)
+	d.cache = cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
+	if d.Assets != nil {
+		d.index, _ = fs.ReadFile(d.Assets, "index.html")
+	}
+
 	fc := fiber.Config{
 		AppName:               "goshort",
 		DisableStartupMessage: true,
@@ -49,19 +63,4 @@ func New(d Deps) *fiber.App {
 	registerRedirect(app, d)
 
 	return app
-}
-
-func (d Deps) syncPoolCounters() {
-	if d.Pool == nil {
-		return
-	}
-	d.Metrics.SetDropped(d.Pool.Dropped())
-	d.Metrics.SetWritten(d.Pool.Written())
-}
-
-func (d Deps) totalClicks(c *fiber.Ctx) int64 {
-	var total int64
-	d.DB.WithContext(c.UserContext()).Model(&model.Link{}).
-		Select("COALESCE(SUM(click_count), 0)").Scan(&total)
-	return total
 }

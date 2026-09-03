@@ -78,7 +78,7 @@ export function Dashboard() {
             </div>
             <div className="gauge-foot">
               8 workers &nbsp;·&nbsp; batch 50 &nbsp;·&nbsp;{" "}
-              <span style={{ color: s && s.dropped_events > 0 ? "#e1ad66" : undefined }}>
+              <span style={{ color: s && s.dropped_events > 0 ? "var(--color-ink-accent)" : undefined }}>
                 {s?.dropped_events ?? 0} dropped
               </span>
             </div>
@@ -89,7 +89,7 @@ export function Dashboard() {
             <div className="gauge-value"><b>{(s?.total_clicks ?? 0).toLocaleString()}</b></div>
             <div style={{ height: 3, marginTop: 18 }} />
             <div className="gauge-foot">
-              <span style={{ color: "#e1ad66" }}>+{sinceLoad}</span> since this page loaded
+              <span style={{ color: "var(--color-ink-accent)" }}>+{sinceLoad}</span> since this page loaded
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@ function LatencyTrace({ values }: { values: number[] }) {
       style={{ width: "100%", height: 34, marginTop: 12, display: "block", overflow: "visible" }}
       aria-hidden="true"
     >
-      <polyline points={points} fill="none" stroke="#e1ad66" strokeWidth="1.25" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+      <polyline points={points} fill="none" stroke="var(--color-ink-accent)" strokeWidth="1.25" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }

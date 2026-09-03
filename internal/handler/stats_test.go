@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -180,4 +181,45 @@ func TestDashboardOverviewCarriesTheHeavyAggregates(t *testing.T) {
 	require.Equal(t, "gopher", body.TopLinks[0].Code)
 	require.Equal(t, int64(2), body.TopLinks[0].Clicks)
 	require.NotEmpty(t, body.Referrers)
+}
+
+// ตัด top 6 แล้วคิดเปอร์เซ็นต์จากแค่หกตัวนั้น จะได้ 100% เสมอทั้งที่หางถูกทิ้ง
+func TestReferrerPercentagesAreShareOfAllClicksNotJustTheTopSix(t *testing.T) {
+	e := newEnv(t)
+	createLink(t, e.app, `{"long_url":"https://go.dev/","alias":"gopher"}`)
+
+	for i := 0; i < 8; i++ {
+		e.clickFrom(t, "gopher", fmt.Sprintf("https://site-%d.example/", i))
+	}
+	e.drain(t)
+
+	res, err := e.app.Test(httptest.NewRequest(http.MethodGet, "/api/links/gopher/stats", nil))
+	require.NoError(t, err)
+
+	var body struct {
+		Referrers []referrer `json:"referrers"`
+	}
+	decode(t, res, &body)
+
+	require.Len(t, body.Referrers, 6, "only the top six are returned")
+	sum := 0.0
+	for _, r := range body.Referrers {
+		sum += r.Percent
+	}
+	require.InDelta(t, 75.0, sum, 0.1, "six of eight referrers is 75%, not 100%")
+}
+
+func TestPublicStatsEndpointIsRateLimited(t *testing.T) {
+	app := newApp(t)
+
+	last := 0
+	for i := 0; i < 130; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/api/stats/public", nil)
+		req.Header.Set("X-Forwarded-For", "203.0.113.44")
+		res, err := app.Test(req, -1)
+		require.NoError(t, err)
+		last = res.StatusCode
+	}
+	require.Equal(t, http.StatusTooManyRequests, last,
+		"an unauthenticated endpoint must not be free to hammer")
 }

@@ -1,4 +1,5 @@
-/* Classical — design-system tokens and component classes. This file is the source of truth for the system's look; retune it here and see readme.md. */
+/* Classical — ยกมาจาก mockup ทั้งไฟล์ เป็นตัวจริงของสีและระยะทั้งระบบ
+   แก้ค่าที่นี่ที่เดียว ห้ามตั้งสีหรือ spacing ใหม่ในคอมโพเนนต์ */
 :root {
   --color-bg: #f3f2f2;
   --color-surface: #eae9e9;
@@ -40,9 +41,8 @@
   --color-accent-2-900: #382810;
 
   --font-heading: "Cormorant Garamond", system-ui, sans-serif;
-  --font-heading-weight: 600; /* review round 3: bold retired — semibold is the
-     interface headings' ceiling (they need the weight at small sizes); display
-     text goes lighter still, to the normal cut (see the deck) */
+  /* semibold คือเพดานของหัวข้อใน UI — bold หนาเกินไปที่ขนาดเล็ก */
+  --font-heading-weight: 600;
   --font-body: "Lora", system-ui, sans-serif;
 
   --space-1: 4.6px;
@@ -73,11 +73,6 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-headi
 .plate{filter:sepia(0.22) saturate(0.82) contrast(1.05);box-sizing:border-box;
   border:6px solid var(--color-surface);outline:1px solid var(--color-divider)}
 
-/* ══════════════════════════════════════════════════════════════════════════
-   Components — built with the tokens above. Plain CSS
-   on plain HTML: no JavaScript, no build step. Each class is documented in
-   readme.md and demonstrated in foundations/ and components/.
-   ══════════════════════════════════════════════════════════════════════ */
 
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
@@ -105,19 +100,16 @@ figcaption {
 :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 ::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
 
-/* — rules — */
 .hr {
   height: 1px; border: 0; margin: var(--space-4) 0;
   background: var(--color-divider);
 }
 
-/* — buttons — */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   cursor: pointer; text-decoration: none;
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 14px; line-height: 1.2; color: var(--color-text); /* matches the .input's 14px —
-     the pair sits side by side in sign-up rows */
+  font-size: 14px; line-height: 1.2; color: var(--color-text); /* ตรงกับ .input ปุ่มกับช่องกรอกยืนข้างกันในแถวเดียว */
   background: transparent; border: 1px solid transparent;
   padding: var(--space-2) calc(var(--space-3) * 1.2);
   border-radius: var(--radius-md);
@@ -136,7 +128,6 @@ figcaption {
 .btn-icon { width: 36px; height: 36px; padding: 0; }
 .btn-block { width: 100%; margin-top: var(--space-2); }
 
-/* — forms — */
 .field > label {
   display: block; font-size: 12px; margin-bottom: 5px;
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
@@ -177,7 +168,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 .seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 .seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
 
-/* — cards — */
 .card {
   display: flex; flex-direction: column; gap: var(--space-2);
   padding: var(--space-3); border-radius: var(--radius-md); background: transparent; border: 1px solid var(--color-divider);
@@ -196,7 +186,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 .elev-md { box-shadow: var(--shadow-md); }
 .elev-lg { box-shadow: var(--shadow-lg); }
 
-/* — tags — */
 .tag {
   display: inline-flex; align-items: center; font-size: 11px;
   letter-spacing: 0.02em; padding: 3px 10px;
@@ -207,7 +196,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 .tag-neutral { background: var(--color-neutral-100); color: var(--color-neutral-800); }
 .tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent); }
 
-/* — navigation — */
 .nav {
   display: flex; align-items: center; gap: var(--space-4);
   padding: var(--space-3) var(--space-4);
@@ -220,7 +208,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 .nav a { color: inherit; text-decoration: none; font-size: 14px; }
 .nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
 
-/* — tables — */
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .table th {
   text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
@@ -233,7 +220,6 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 .table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
 
-/* — dialog — */
 .dialog-backdrop {
   position: fixed; inset: 0; display: grid; place-items: center;
   padding: var(--space-4);
@@ -266,3 +252,18 @@ textarea.input { min-height: 90px; resize: vertical; }
   @keyframes lp-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes lp-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   @keyframes lp-ghost { 0%, 100% { opacity: 0.055; } 50% { opacity: 0.1; } }
+
+/* เพิ่มจากของเดิม: panel พื้นเข้มใน mockup ใช้สีดิบเขียนตรงใน markup
+   ยกมาเป็น token เพื่อไม่ให้มีค่าสีกระจายอยู่ในคอมโพเนนต์ */
+:root {
+  --color-ink-surface: #1a1815;
+  --color-ink-text: #f3f2f2;
+  --color-ink-muted: #bab6b6;
+  --color-ink-faint: #7d7979;
+  --color-ink-trace: #605d5d;
+  --color-ink-dim: #9b9797;
+  --color-ink-accent: #e1ad66;
+  --color-ink-rule: rgba(225, 173, 102, 0.22);
+  --color-ink-track: rgba(243, 242, 242, 0.12);
+  --color-ink-border: rgba(243, 242, 242, 0.28);
+}

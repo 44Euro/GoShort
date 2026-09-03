@@ -194,8 +194,8 @@
 
 /* หน้าจอพื้นเข้ม (404 และครึ่งซ้ายของ login) */
 .dark-panel {
-  background: #1a1815;
-  color: #f3f2f2;
+  background: var(--color-ink-surface);
+  color: var(--color-ink-text);
   position: relative;
   overflow: hidden;
 }
@@ -203,7 +203,7 @@
   position: absolute;
   font-family: var(--font-heading);
   font-weight: 400;
-  color: #e1ad66;
+  color: var(--color-ink-accent);
   opacity: 0.08;
   letter-spacing: -0.05em;
   line-height: 1;
@@ -256,7 +256,7 @@
 .notfound p {
   font-size: 14.5px;
   line-height: 1.7;
-  color: #bab6b6;
+  color: var(--color-ink-muted);
   margin: 0;
   max-width: 520px;
 }
@@ -265,7 +265,7 @@
   bottom: 30px;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 10.5px;
-  color: #605d5d;
+  color: var(--color-ink-trace);
   letter-spacing: 0.1em;
 }
 
@@ -419,15 +419,15 @@ th.sortable:hover { color: var(--color-accent); }
 .instrument {
   position: relative;
   overflow: hidden;
-  background: #1a1815;
-  color: #f3f2f2;
+  background: var(--color-ink-surface);
+  color: var(--color-ink-text);
   border-top: 1px solid var(--color-accent-800);
   border-bottom: 1px solid var(--color-accent-800);
 }
 .instrument-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 .gauge {
   padding: 30px 30px 26px;
-  border-right: 1px solid rgba(225, 173, 102, 0.22);
+  border-right: 1px solid var(--color-ink-rule);
 }
 .gauge:last-child { border-right: 0; }
 .gauge-label {
@@ -435,7 +435,7 @@ th.sortable:hover { color: var(--color-accent); }
   font-size: 9.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #e1ad66;
+  color: var(--color-ink-accent);
   margin-bottom: 16px;
 }
 .gauge-value { display: flex; align-items: baseline; gap: 6px; }
@@ -450,20 +450,20 @@ th.sortable:hover { color: var(--color-accent); }
 .gauge-value i {
   font-family: var(--font-heading);
   font-size: 24px;
-  color: #bab6b6;
+  color: var(--color-ink-muted);
   font-style: normal;
 }
 .gauge-foot {
   margin-top: 12px;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 10.5px;
-  color: #9b9797;
+  color: var(--color-ink-dim);
   letter-spacing: 0.02em;
 }
 .meter {
   margin-top: 18px;
   height: 3px;
-  background: rgba(243, 242, 242, 0.12);
+  background: var(--color-ink-track);
   position: relative;
 }
 .meter span {
@@ -473,7 +473,7 @@ th.sortable:hover { color: var(--color-accent); }
   transition: width 0.8s cubic-bezier(0.3, 0.8, 0.3, 1);
 }
 .queue-ticks { display: flex; gap: 2px; margin-top: 18px; height: 3px; }
-.queue-ticks span { flex: 1; background: rgba(243, 242, 242, 0.12); }
+.queue-ticks span { flex: 1; background: var(--color-ink-track); }
 .queue-ticks span.on { background: var(--color-accent-400); }
 
 .panel { padding: 40px; border-bottom: 1px solid var(--color-divider); }
@@ -527,7 +527,7 @@ th.sortable:hover { color: var(--color-accent); }
   .gauge { padding: 22px 20px; }
   .gauge-value b { font-size: 42px; }
   .gauge:nth-child(2n) { border-right: 0; }
-  .gauge:nth-child(-n + 2) { border-bottom: 1px solid rgba(225, 173, 102, 0.22); }
+  .gauge:nth-child(-n + 2) { border-bottom: 1px solid var(--color-ink-rule); }
   .two-col { grid-template-columns: 1fr; }
   .two-col > * { padding: 28px 20px; }
   .two-col > * + * { border-left: 0; border-top: 1px solid var(--color-divider); }

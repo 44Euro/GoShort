@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"goshort/internal/cache"
 	"goshort/internal/middleware"
 	"goshort/internal/model"
 	"goshort/internal/repository"
@@ -15,6 +14,10 @@ import (
 
 // aggregate เป็น GROUP BY ที่เปิดให้คนไม่ล็อกอินยิงได้ cache ไว้สั้น ๆ กันโดนถล่ม
 func cached[T any](d Deps, ctx context.Context, key string, build func() (T, error)) (T, error) {
+	return cachedFor(d, ctx, key, d.Cfg.AggregateCacheTTL, build)
+}
+
+func cachedFor[T any](d Deps, ctx context.Context, key string, ttl time.Duration, build func() (T, error)) (T, error) {
 	if raw, err := d.Redis.Get(ctx, key).Bytes(); err == nil {
 		var v T
 		if json.Unmarshal(raw, &v) == nil {
@@ -26,7 +29,7 @@ func cached[T any](d Deps, ctx context.Context, key string, build func() (T, err
 		return v, err
 	}
 	if raw, err := json.Marshal(v); err == nil {
-		d.Redis.Set(ctx, key, raw, d.Cfg.AggregateCacheTTL)
+		d.Redis.Set(ctx, key, raw, ttl)
 	}
 	return v, nil
 }
@@ -40,13 +43,10 @@ type linkStats struct {
 }
 
 func registerStats(app *fiber.App, d Deps) {
-	links := repository.NewLinkRepo(d.DB)
-	stats := repository.NewStatsRepo(d.DB)
-
 	app.Get("/api/links/:code/stats",
 		middleware.RateLimit(d.Redis, "stats", 60, time.Minute),
 		func(c *fiber.Ctx) error {
-			link, err := links.ByCode(c.UserContext(), c.Params("code"))
+			link, err := d.links.ByCode(c.UserContext(), c.Params("code"))
 			if err != nil {
 				if repository.IsNotFound(err) {
 					return fail(c, fiber.StatusNotFound, "no such link")
@@ -55,11 +55,11 @@ func registerStats(app *fiber.App, d Deps) {
 			}
 
 			out, err := cached(d, c.UserContext(), "agg:stats:"+link.ShortCode, func() (linkStats, error) {
-				series, err := stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
+				series, err := d.stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
 				if err != nil {
 					return linkStats{}, err
 				}
-				refs, err := stats.Referrers(c.UserContext(), &link.ID, 6)
+				refs, err := d.stats.Referrers(c.UserContext(), &link.ID, 6)
 				if err != nil {
 					return linkStats{}, err
 				}
@@ -78,12 +78,8 @@ func registerStats(app *fiber.App, d Deps) {
 }
 
 func registerAdminAnalytics(g fiber.Router, d Deps) {
-	links := repository.NewLinkRepo(d.DB)
-	stats := repository.NewStatsRepo(d.DB)
-	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
-
 	g.Get("/links/:code/analytics", func(c *fiber.Ctx) error {
-		link, err := links.ByCode(c.UserContext(), c.Params("code"))
+		link, err := d.links.ByCode(c.UserContext(), c.Params("code"))
 		if err != nil {
 			if repository.IsNotFound(err) {
 				return fail(c, fiber.StatusNotFound, "no such link")
@@ -91,35 +87,34 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 			return err
 		}
 
-		series, err := stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
+		series, err := d.stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
 		if err != nil {
 			return err
 		}
-		refs, err := stats.Referrers(c.UserContext(), &link.ID, 6)
+		refs, err := d.stats.Referrers(c.UserContext(), &link.ID, 6)
 		if err != nil {
 			return err
 		}
-		unique, err := stats.UniqueVisitors(c.UserContext(), link.ID)
+		unique, err := d.stats.UniqueVisitors(c.UserContext(), link.ID)
 		if err != nil {
 			return err
 		}
-		events, err := stats.RecentEvents(c.UserContext(), link.ID, 8)
+		events, err := d.stats.RecentEvents(c.UserContext(), link.ID, 8)
 		if err != nil {
 			return err
 		}
 
 		cacheState := fiber.Map{"warm": false, "ttl_seconds": 0}
-		if ttl, ok := lc.TTL(c.UserContext(), link.ShortCode); ok {
+		if ttl, ok := d.cache.TTL(c.UserContext(), link.ShortCode); ok {
 			cacheState = fiber.Map{"warm": true, "ttl_seconds": int(ttl.Seconds())}
 		}
 
-		days := float64(repository.SeriesDays)
 		return c.JSON(fiber.Map{
 			"code":       link.ShortCode,
 			"long_url":   link.LongURL,
 			"clicks":     link.ClickCount,
 			"unique":     unique,
-			"per_day":    float64(link.ClickCount) / days,
+			"per_day":    meanPerDay(link),
 			"status":     linkStatus(link),
 			"cache":      cacheState,
 			"series":     series,
@@ -130,8 +125,11 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 	})
 
 	g.Get("/dashboard/summary", func(c *fiber.Ctx) error {
-		d.syncPoolCounters()
 		s := d.Metrics.Summary()
+		total, err := d.totalClicks(c)
+		if err != nil {
+			return err
+		}
 		return c.JSON(fiber.Map{
 			"cache_hit_rate":  s.CacheHitRate,
 			"p99_redirect_ms": s.P99Millis,
@@ -139,7 +137,7 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 			"queue_capacity":  s.QueueCap,
 			"dropped_events":  s.Dropped,
 			"written_events":  s.Written,
-			"total_clicks":    d.totalClicks(c),
+			"total_clicks":    total,
 		})
 	})
 
@@ -151,15 +149,15 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 		}
 
 		out, err := cached(d, c.UserContext(), "agg:overview", func() (overview, error) {
-			series, err := stats.DailyForAll(c.UserContext(), repository.SeriesDays)
+			series, err := d.stats.DailyForAll(c.UserContext(), repository.SeriesDays)
 			if err != nil {
 				return overview{}, err
 			}
-			refs, err := stats.Referrers(c.UserContext(), nil, 6)
+			refs, err := d.stats.Referrers(c.UserContext(), nil, 6)
 			if err != nil {
 				return overview{}, err
 			}
-			all, err := links.All(c.UserContext())
+			all, err := d.links.All(c.UserContext())
 			if err != nil {
 				return overview{}, err
 			}
@@ -202,4 +200,21 @@ func publicEvents(events []model.ClickEvent) []fiber.Map {
 		})
 	}
 	return out
+}
+
+// TTL สั้นกว่า aggregate อื่นมาก เพราะตัวเลขนี้ถูก poll ทุก 2 วินาทีและต้องดูขยับ
+func (d Deps) totalClicks(c *fiber.Ctx) (int64, error) {
+	return cachedFor(d, c.UserContext(), "agg:total-clicks", 2*time.Second, func() (int64, error) {
+		return d.links.TotalClicks(c.UserContext())
+	})
+}
+
+// หารด้วยอายุจริงของลิงก์ ไม่ใช่ความยาวของกราฟ ลิงก์ที่สร้างเมื่อวานกับลิงก์อายุ
+// สามเดือนมีค่าเฉลี่ยต่อวันคนละความหมาย
+func meanPerDay(l model.Link) float64 {
+	days := time.Since(l.CreatedAt).Hours() / 24
+	if days < 1 {
+		days = 1
+	}
+	return float64(l.ClickCount) / days
 }

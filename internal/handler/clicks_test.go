@@ -133,3 +133,21 @@ func TestPublicStatsReadsFromTheSameRegistry(t *testing.T) {
 	require.Equal(t, int64(0), body.Dropped)
 	require.Equal(t, int64(3), body.TotalClicks)
 }
+
+// counter ต้องอ่านจาก pool ตอน scrape ไม่ใช่รอให้ใครมาเปิดหน้า dashboard ก่อน
+// ไม่งั้น Prometheus ที่ scrape อยู่เงียบ ๆ จะเห็น 0 ตลอด
+func TestMetricsReportPoolCountersWithoutAnyoneOpeningTheDashboard(t *testing.T) {
+	e := newEnv(t)
+	_, created := createLink(t, e.app, `{"long_url":"https://go.dev/"}`)
+	for i := 0; i < 3; i++ {
+		_, _ = e.app.Test(httptest.NewRequest(http.MethodGet, "/"+created.Code, nil))
+	}
+	e.drain(t)
+
+	res, err := e.app.Test(httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	require.NoError(t, err)
+	body := readBody(t, res)
+
+	require.Contains(t, body, "goshort_click_events_written_total 3")
+	require.Contains(t, body, "goshort_click_events_dropped_total 0")
+}

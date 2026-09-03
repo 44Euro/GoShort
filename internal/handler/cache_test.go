@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -39,4 +40,24 @@ func TestRedirectStillWorksWhenRedisIsDown(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, http.StatusFound, res.StatusCode, "a dead cache must fall back to postgres, not 500")
 	require.Equal(t, "https://go.dev/", res.Header.Get("Location"))
+}
+
+// เทสต์ expiry เดิมยิงเฉพาะตอน cache เย็น ซึ่งไม่ครอบเคสจริง: ลิงก์ที่ถูก cache
+// ไว้ตอนยังไม่หมดอายุ แล้วหมดอายุระหว่างที่ entry ยังอยู่ใน Redis
+func TestALinkThatExpiresWhileCachedStopsRedirecting(t *testing.T) {
+	e := newEnv(t)
+	soon := time.Now().Add(1500 * time.Millisecond).UTC().Format(time.RFC3339Nano)
+	_, created := createLink(t, e.app, `{"long_url":"https://go.dev/","expires_at":"`+soon+`"}`)
+
+	res, err := e.app.Test(httptest.NewRequest(http.MethodGet, "/"+created.Code, nil))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusFound, res.StatusCode, "still valid, should redirect")
+	require.NoError(t, e.rdb.Get(t.Context(), "link:"+created.Code).Err(), "cache should be warm")
+
+	time.Sleep(1800 * time.Millisecond)
+
+	res, err = e.app.Test(httptest.NewRequest(http.MethodGet, "/"+created.Code, nil))
+	require.NoError(t, err)
+	require.Equal(t, http.StatusNotFound, res.StatusCode,
+		"an expired link must not keep redirecting just because it is still cached")
 }

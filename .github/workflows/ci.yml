@@ -64,7 +64,6 @@ jobs:
       ADMIN_EMAIL: admin@goshort.dev
       ADMIN_PASSWORD: goshort-demo
       PORT: "8099"
-      GOSHORT_DEV: "1"
       GOSHORT_URL: http://localhost:8099
 
     steps:

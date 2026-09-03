@@ -66,7 +66,6 @@ func testConfig() config.Config {
 		TrustProxy:      true,
 		ClickBufferSize: 1000,
 		ClickBatchSize:  50,
-		Dev:             true,
 	}
 }
 
@@ -114,10 +113,7 @@ func build(t *testing.T, assets fs.FS) env {
 	t.Cleanup(func() { _ = pool.Shutdown(context.Background()) })
 
 	m := metrics.New()
-	m.TrackQueue(
-		func() float64 { return float64(pool.Depth()) },
-		func() float64 { return float64(pool.Capacity()) },
-	)
+	m.TrackPool(pool)
 
 	app := handler.New(handler.Deps{
 		Assets: assets,

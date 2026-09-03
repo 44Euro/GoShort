@@ -11,8 +11,13 @@ import (
 // เก็บ ID มาด้วย ไม่ใช่แค่ URL — cache hit ต้องบันทึกคลิกได้โดยไม่ต้องกลับไปถาม
 // Postgres เพื่อหา link_id ไม่งั้น cache ก็ไม่ได้ช่วยอะไรบน path ที่มี analytics
 type Entry struct {
-	ID      uint   `json:"id"`
-	LongURL string `json:"url"`
+	ID        uint       `json:"id"`
+	LongURL   string     `json:"url"`
+	ExpiresAt *time.Time `json:"exp,omitempty"`
+}
+
+func (e Entry) Expired(now time.Time) bool {
+	return e.ExpiresAt != nil && e.ExpiresAt.Before(now)
 }
 
 type LinkCache struct {
@@ -39,12 +44,25 @@ func (c *LinkCache) Get(ctx context.Context, code string) (Entry, bool) {
 	return e, true
 }
 
+// TTL ของ key ต้องไม่ยาวกว่าอายุของลิงก์เอง ไม่งั้นลิงก์ที่หมดอายุแล้วจะยัง
+// เด้งต่อจนกว่า cache จะหมดอายุตาม อีกชั้นคือ Entry.Expired() กันเวลาเครื่องเพี้ยน
 func (c *LinkCache) Set(ctx context.Context, code string, e Entry) {
 	raw, err := json.Marshal(e)
 	if err != nil {
 		return
 	}
-	c.rdb.Set(ctx, key(code), raw, c.ttl)
+
+	ttl := c.ttl
+	if e.ExpiresAt != nil {
+		remaining := time.Until(*e.ExpiresAt)
+		if remaining <= 0 {
+			return
+		}
+		if remaining < ttl {
+			ttl = remaining
+		}
+	}
+	c.rdb.Set(ctx, key(code), raw, ttl)
 }
 
 func (c *LinkCache) Invalidate(ctx context.Context, code string) error {

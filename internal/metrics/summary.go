@@ -11,7 +11,6 @@ type Summary struct {
 	QueueCap     int64   `json:"queue_capacity"`
 	Dropped      int64   `json:"dropped_events"`
 	Written      int64   `json:"written_events"`
-	Redirects    int64   `json:"redirects"`
 }
 
 // อ่านจาก registry เดียวกับที่ /metrics เสิร์ฟ ห้ามนับซ้ำอีกทางหนึ่ง
@@ -50,9 +49,7 @@ func (m *Metrics) Summary() Summary {
 		case "goshort_click_queue_capacity":
 			s.QueueCap = int64(f.GetMetric()[0].GetGauge().GetValue())
 		case "goshort_redirect_duration_seconds":
-			h := f.GetMetric()[0].GetHistogram()
-			s.Redirects = int64(h.GetSampleCount())
-			s.P99Millis = quantileFromBuckets(h, 0.99) * 1000
+			s.P99Millis = quantileFromBuckets(f.GetMetric()[0].GetHistogram(), 0.99) * 1000
 		}
 	}
 

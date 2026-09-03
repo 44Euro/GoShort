@@ -53,10 +53,7 @@ func main() {
 	pool.Start()
 
 	m := metrics.New()
-	m.TrackQueue(
-		func() float64 { return float64(pool.Depth()) },
-		func() float64 { return float64(pool.Capacity()) },
-	)
+	m.TrackPool(pool)
 
 	app := handler.New(handler.Deps{
 		Assets: web.Dist(),

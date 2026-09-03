@@ -1,3 +1,7 @@
+function isAdminView(): boolean {
+  return window.location.pathname.startsWith("/admin");
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -13,6 +17,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: init?.body ? { "Content-Type": "application/json" } : undefined,
     ...init,
   });
+
+  // token อยู่ใน httpOnly cookie อ่านวันหมดอายุจาก JS ไม่ได้ จึงต้องรู้ตัวจาก 401
+  // ที่ตอบกลับมาแทน แล้วพากลับไปหน้า login ไม่ปล่อยให้หน้าจอเต็มไปด้วย error
+  if (res.status === 401 && !path.endsWith("/api/admin/me") && isAdminView()) {
+    window.location.assign("/login");
+  }
 
   if (!res.ok) {
     let message = res.statusText;

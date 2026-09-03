@@ -47,7 +47,3 @@ func (s *ClickStore) WriteBatch(ctx context.Context, events []worker.Event) erro
 		return nil
 	})
 }
-
-func (s *ClickStore) WriteBatchNow(ctx context.Context, events ...worker.Event) error {
-	return s.WriteBatch(ctx, events)
-}

@@ -108,20 +108,25 @@ func (s *StatsRepo) Referrers(ctx context.Context, linkID *uint, limit int) ([]R
 		Referrer string
 		Clicks   int64
 	}
-	var rows []row
-	q := s.db.WithContext(ctx).Model(&model.ClickEvent{}).
-		Select("referrer, count(*) AS clicks").
-		Group("referrer").Order("clicks desc").Limit(limit)
+	base := s.db.WithContext(ctx).Model(&model.ClickEvent{})
 	if linkID != nil {
-		q = q.Where("link_id = ?", *linkID)
+		base = base.Where("link_id = ?", *linkID)
 	}
-	if err := q.Scan(&rows).Error; err != nil {
+
+	// นับทั้งหมดก่อน ไม่งั้นเปอร์เซ็นต์ของ top N จะรวมกันได้ 100% เสมอ
+	// ทั้งที่หางถูกตัดทิ้ง ซึ่งอ่านแล้วเข้าใจผิด
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
 		return nil, err
 	}
 
-	var total int64
-	for _, r := range rows {
-		total += r.Clicks
+	var rows []row
+	err := base.Session(&gorm.Session{}).
+		Select("referrer, count(*) AS clicks").
+		Group("referrer").Order("clicks desc").Limit(limit).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
 	}
 
 	out := make([]Referrer, 0, len(rows))

@@ -33,7 +33,7 @@ export function Login() {
       <div className="dark-panel login-aside">
         <span className="sweep" />
         <div style={{ fontFamily: "var(--font-heading)", fontSize: 22, letterSpacing: "-0.02em" }}>
-          GoShort<span style={{ color: "#e1ad66" }}>.</span>
+          GoShort<span style={{ color: "var(--color-ink-accent)" }}>.</span>
         </div>
         <div>
           <div
@@ -48,20 +48,20 @@ export function Login() {
               maxWidth: 380,
               fontSize: 14,
               lineHeight: 1.7,
-              color: "#bab6b6",
+              color: "var(--color-ink-muted)",
               textAlign: "justify",
               margin: "26px 0 0",
             }}
           >
             A single seeded administrator. No registration, no password reset, no second account — the
             credential is created once by{" "}
-            <span className="mono" style={{ fontSize: 12.5, color: "#e1ad66" }}>cmd/seed</span> and checked
+            <span className="mono" style={{ fontSize: 12.5, color: "var(--color-ink-accent)" }}>cmd/seed</span> and checked
             against a bcrypt hash.
           </p>
         </div>
         <div
           className="mono"
-          style={{ fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "#7d7979" }}
+          style={{ fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-ink-faint)" }}
         >
           JWT · HS256 · 24h expiry
         </div>

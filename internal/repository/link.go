@@ -99,3 +99,12 @@ func (r *LinkRepo) Delete(ctx context.Context, code string) error {
 	}
 	return nil
 }
+
+// SUM ทั้งตารางบนเส้นที่ถูก poll ทุก 2 วินาทีจะกลายเป็น seq scan ประจำ
+// cache ไว้สั้น ๆ พอให้ตัวเลขยังดูสด แต่ DB ไม่ต้องทำงานทุกรอบ
+func (r *LinkRepo) TotalClicks(ctx context.Context) (int64, error) {
+	var total int64
+	err := r.db.WithContext(ctx).Model(&model.Link{}).
+		Select("COALESCE(SUM(click_count), 0)").Scan(&total).Error
+	return total, err
+}

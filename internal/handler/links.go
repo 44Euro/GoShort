@@ -18,8 +18,6 @@ type createLinkRequest struct {
 }
 
 func registerLinks(app *fiber.App, d Deps) {
-	links := repository.NewLinkRepo(d.DB)
-
 	app.Post("/api/links",
 		middleware.RateLimit(d.Redis, "create", 20, time.Minute),
 		func(c *fiber.Ctx) error {
@@ -42,7 +40,7 @@ func registerLinks(app *fiber.App, d Deps) {
 			}
 
 			if req.Alias == "" {
-				link, err := links.Create(c.UserContext(), req.LongURL, expiresAt)
+				link, err := d.links.Create(c.UserContext(), req.LongURL, expiresAt)
 				if err != nil {
 					return err
 				}
@@ -56,7 +54,7 @@ func registerLinks(app *fiber.App, d Deps) {
 				return fail(c, fiber.StatusConflict, "that alias is reserved, pick another one")
 			}
 
-			link, err := links.CreateWithAlias(c.UserContext(), req.Alias, req.LongURL, expiresAt)
+			link, err := d.links.CreateWithAlias(c.UserContext(), req.Alias, req.LongURL, expiresAt)
 			if errors.Is(err, repository.ErrCodeTaken) {
 				return fail(c, fiber.StatusConflict, "that alias is already taken, pick another one")
 			}

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"io/fs"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -13,14 +12,6 @@ import (
 
 // ต้องลงทะเบียนเป็น route สุดท้ายเสมอ ดู New()
 func registerRedirect(app *fiber.App, d Deps) {
-	links := repository.NewLinkRepo(d.DB)
-	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
-
-	var index []byte
-	if d.Assets != nil {
-		index, _ = fs.ReadFile(d.Assets, "index.html")
-	}
-
 	app.Get("/:code", func(c *fiber.Ctx) error {
 		started := time.Now()
 		defer func() { d.Metrics.ObserveRedirect(time.Since(started)) }()
@@ -28,7 +19,7 @@ func registerRedirect(app *fiber.App, d Deps) {
 		code := c.Params("code")
 
 		if !d.Cfg.SyncMode {
-			if e, ok := lc.Get(c.UserContext(), code); ok {
+			if e, ok := d.cache.Get(c.UserContext(), code); ok && !e.Expired(time.Now()) {
 				d.Metrics.CacheHit()
 				d.recordClick(c, model.Link{ID: e.ID})
 				return c.Redirect(e.LongURL, fiber.StatusFound)
@@ -36,19 +27,21 @@ func registerRedirect(app *fiber.App, d Deps) {
 			d.Metrics.CacheMiss()
 		}
 
-		link, err := links.ByCode(c.UserContext(), code)
+		link, err := d.links.ByCode(c.UserContext(), code)
 		if err != nil {
 			if repository.IsNotFound(err) {
-				return spaNotFound(c, index)
+				return spaNotFound(c, d.index)
 			}
 			return err
 		}
 		if link.ExpiresAt != nil && link.ExpiresAt.Before(time.Now()) {
-			return spaNotFound(c, index)
+			return spaNotFound(c, d.index)
 		}
 
 		if !d.Cfg.SyncMode {
-			lc.Set(c.UserContext(), code, cache.Entry{ID: link.ID, LongURL: link.LongURL})
+			d.cache.Set(c.UserContext(), code, cache.Entry{
+				ID: link.ID, LongURL: link.LongURL, ExpiresAt: link.ExpiresAt,
+			})
 		}
 		d.recordClick(c, link)
 

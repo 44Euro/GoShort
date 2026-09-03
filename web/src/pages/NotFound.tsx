@@ -12,14 +12,14 @@ export function NotFound() {
       </div>
 
       <div style={{ position: "relative", maxWidth: 520 }}>
-        <div className="eyebrow" style={{ color: "#e1ad66", marginBottom: 22 }}>
+        <div className="eyebrow" style={{ color: "var(--color-ink-accent)", marginBottom: 22 }}>
           404 · Not Found
         </div>
         <h1>This link has expired</h1>
         <p>
           {code ? (
             <>
-              The code <span className="mono" style={{ color: "#e1ad66" }}>/{code}</span> was not found, or it
+              The code <span className="mono" style={{ color: "var(--color-ink-accent)" }}>/{code}</span> was not found, or it
               passed its <span className="mono">expires_at</span> and was purged from the cache on deletion, so the
               lookup went straight to Postgres and found nothing.
             </>
@@ -30,14 +30,14 @@ export function NotFound() {
         <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 34, flexWrap: "wrap" }}>
           <button
             className="btn btn-primary"
-            style={{ fontSize: 13.5, color: "#e1ad66", borderColor: "#e1ad66" }}
+            style={{ fontSize: 13.5, color: "var(--color-ink-accent)", borderColor: "var(--color-ink-accent)" }}
             onClick={() => nav("/")}
           >
             Shorten your own link
           </button>
           <button
             className="btn"
-            style={{ fontSize: 13.5, borderColor: "rgba(243,242,242,0.28)", color: "#f3f2f2" }}
+            style={{ fontSize: 13.5, borderColor: "var(--color-ink-border)", color: "var(--color-ink-text)" }}
             onClick={() => nav("/s")}
           >
             Look up another code
