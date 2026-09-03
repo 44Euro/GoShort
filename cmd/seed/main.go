@@ -21,6 +21,7 @@ func main() {
 		MaxIdle:     cfg.DBMaxIdleConns,
 		MaxLifetime: 30 * time.Minute,
 		MaxIdleTime: 5 * time.Minute,
+		Quiet:       true,
 	})
 	if err != nil {
 		log.Fatalf("postgres: %v", err)

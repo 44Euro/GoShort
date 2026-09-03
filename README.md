@@ -88,8 +88,11 @@ docker compose up
 Seed the administrator, then sign in at `/login`:
 
 ```bash
-docker compose run --rm api /seed
+docker compose run --rm --entrypoint /seed api
 ```
+
+The entrypoint override matters: the image's `ENTRYPOINT` is `/api`, so passing `/seed` as a command
+would start the server with an ignored argument instead of running the seeder.
 
 Demo account: `admin@goshort.dev` / `goshort-demo` (both from `.env`).
 
