@@ -25,7 +25,7 @@ func testDB(t *testing.T) *gorm.DB {
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set")
 	}
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Discard})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Discard, TranslateError: true})
 	require.NoError(t, err)
 	require.NoError(t, model.Migrate(db))
 	require.NoError(t, model.Truncate(db))

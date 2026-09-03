@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{TranslateError: true})
 	if err != nil {
 		log.Fatalf("postgres: %v", err)
 	}
