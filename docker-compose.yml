@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: goshort
+      POSTGRES_PASSWORD: goshort
+      POSTGRES_DB: goshort
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U goshort -d goshort"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      BASE_URL: "http://localhost:8080"
+      DATABASE_URL: "postgres://goshort:goshort@postgres:5432/goshort?sslmode=disable"
+      REDIS_URL: "redis://redis:6379/0"
+      JWT_SECRET: "dev-secret-change-me"
+      ADMIN_EMAIL: "admin@goshort.dev"
+      ADMIN_PASSWORD: "goshort-demo"
+      GOSHORT_SYNC_MODE: "${GOSHORT_SYNC_MODE:-0}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
