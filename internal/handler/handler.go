@@ -17,10 +17,14 @@ type Deps struct {
 // ลำดับการลงทะเบียนสำคัญ: Fiber match ตามลำดับ และ GET /:code เป็น wildcard
 // ที่ root มันจะกินทุก path ที่ลงทะเบียนทีหลัง จึงต้องอยู่ท้ายสุดเสมอ
 func New(d Deps) *fiber.App {
-	app := fiber.New(fiber.Config{
+	fc := fiber.Config{
 		AppName:               "goshort",
 		DisableStartupMessage: true,
-	})
+	}
+	if d.Cfg.TrustProxy {
+		fc.ProxyHeader = fiber.HeaderXForwardedFor
+	}
+	app := fiber.New(fc)
 
 	registerOps(app, d)
 	registerLinks(app, d)

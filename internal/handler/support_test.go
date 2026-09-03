@@ -3,6 +3,7 @@ package handler_test
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gofiber/fiber/v2"
@@ -42,17 +43,22 @@ func testRedis(t *testing.T) *redis.Client {
 
 func testConfig() config.Config {
 	return config.Config{
-		BaseURL:   "http://localhost:8080",
-		JWTSecret: "test-secret",
-		Dev:       true,
+		BaseURL:    "http://localhost:8080",
+		JWTSecret:  "test-secret",
+		CacheTTL:   time.Hour,
+		TrustProxy: true,
+		Dev:        true,
 	}
 }
 
 func newApp(t *testing.T) *fiber.App {
 	t.Helper()
-	return handler.New(handler.Deps{
-		DB:    testDB(t),
-		Redis: testRedis(t),
-		Cfg:   testConfig(),
-	})
+	app, _, _ := newAppWithDeps(t)
+	return app
+}
+
+func newAppWithDeps(t *testing.T) (*fiber.App, *gorm.DB, *redis.Client) {
+	t.Helper()
+	db, rdb := testDB(t), testRedis(t)
+	return handler.New(handler.Deps{DB: db, Redis: rdb, Cfg: testConfig()}), db, rdb
 }

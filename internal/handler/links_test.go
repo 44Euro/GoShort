@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -21,8 +22,14 @@ type createResponse struct {
 
 func createLink(t *testing.T, app *fiber.App, body string) (*http.Response, createResponse) {
 	t.Helper()
+	return createLinkFrom(t, app, body, "192.0.2.1")
+}
+
+func createLinkFrom(t *testing.T, app *fiber.App, body, ip string) (*http.Response, createResponse) {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/api/links", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", ip)
 	res, err := app.Test(req, -1)
 	require.NoError(t, err)
 
@@ -66,16 +73,16 @@ func TestConcurrentCreatesNeverHandOutTheSameCode(t *testing.T) {
 
 	for i := 0; i < n; i++ {
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
-			res, body := createLink(t, app, `{"long_url":"https://go.dev/"}`)
+			res, body := createLinkFrom(t, app, `{"long_url":"https://go.dev/"}`, fmt.Sprintf("198.51.100.%d", i))
 			if res.StatusCode != http.StatusCreated {
 				return
 			}
 			mu.Lock()
 			defer mu.Unlock()
 			seen[body.Code] = true
-		}()
+		}(i)
 	}
 	wg.Wait()
 

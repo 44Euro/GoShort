@@ -30,6 +30,10 @@ type Config struct {
 	// ก่อน optimize ด้วย binary ตัวเดียวกัน ไม่ต้อง build ใหม่ (ดู load-test/)
 	SyncMode bool
 
+	// เชื่อ X-Forwarded-For เฉพาะเมื่อรู้ว่ามี proxy จริงคั่นอยู่ ไม่งั้นใครก็
+	// ปลอม header นี้เพื่อรีเซ็ตโควตา rate limit ของตัวเองได้
+	TrustProxy bool
+
 	Dev bool
 }
 
@@ -50,6 +54,7 @@ func Load() (Config, error) {
 		CacheTTL:          envDuration("CACHE_TTL", time.Hour),
 		AggregateCacheTTL: envDuration("AGGREGATE_CACHE_TTL", 60*time.Second),
 		SyncMode:          envBool("GOSHORT_SYNC_MODE", false),
+		TrustProxy:        envBool("TRUST_PROXY", false),
 		Dev:               envBool("GOSHORT_DEV", false),
 	}
 
