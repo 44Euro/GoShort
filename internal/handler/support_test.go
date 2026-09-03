@@ -106,6 +106,11 @@ func newEnv(t *testing.T) env {
 	return env{app: app, db: db, rdb: rdb, pool: pool}
 }
 
+func (e env) seedAdmin(t *testing.T, email, password string) {
+	t.Helper()
+	require.NoError(t, repository.NewAdminRepo(e.db).Upsert(context.Background(), email, password))
+}
+
 // รอให้ pipeline เขียนของค้างจนหมด: คิวว่าง แล้วยอดที่เขียนไปนิ่งข้ามรอบ flush
 func (e env) drain(t *testing.T) {
 	t.Helper()

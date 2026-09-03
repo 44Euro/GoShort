@@ -35,6 +35,7 @@ func New(d Deps) *fiber.App {
 
 	registerOps(app, d)
 	registerLinks(app, d)
+	registerAdmin(app, d)
 
 	// ต้องอยู่ท้ายสุด
 	registerRedirect(app, d)
