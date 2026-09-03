@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"goshort/internal/cache"
+	"goshort/internal/model"
 	"goshort/internal/repository"
 )
 
@@ -15,12 +16,18 @@ func registerRedirect(app *fiber.App, d Deps) {
 	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
 
 	app.Get("/:code", func(c *fiber.Ctx) error {
+		started := time.Now()
+		defer func() { d.Metrics.ObserveRedirect(time.Since(started)) }()
+
 		code := c.Params("code")
 
 		if !d.Cfg.SyncMode {
-			if longURL, ok := lc.Get(c.Context(), code); ok {
-				return c.Redirect(longURL, fiber.StatusFound)
+			if e, ok := lc.Get(c.Context(), code); ok {
+				d.Metrics.CacheHit()
+				d.recordClick(c, model.Link{ID: e.ID})
+				return c.Redirect(e.LongURL, fiber.StatusFound)
 			}
+			d.Metrics.CacheMiss()
 		}
 
 		link, err := links.ByCode(c.Context(), code)
@@ -35,8 +42,9 @@ func registerRedirect(app *fiber.App, d Deps) {
 		}
 
 		if !d.Cfg.SyncMode {
-			lc.Set(c.Context(), code, link.LongURL)
+			lc.Set(c.Context(), code, cache.Entry{ID: link.ID, LongURL: link.LongURL})
 		}
+		d.recordClick(c, link)
 
 		return c.Redirect(link.LongURL, fiber.StatusFound)
 	})

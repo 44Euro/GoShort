@@ -18,7 +18,7 @@ func TestFirstRedirectWarmsTheCacheAndSecondReadsFromIt(t *testing.T) {
 
 	cached, err := rdb.Get(t.Context(), "link:"+created.Code).Result()
 	require.NoError(t, err, "first redirect should have written the cache")
-	require.Equal(t, "https://go.dev/blog/pipelines", cached)
+	require.Contains(t, cached, "https://go.dev/blog/pipelines")
 
 	// ลบแถวทิ้งโดยไม่แตะ cache ถ้า redirect ยังทำงานอยู่แปลว่าอ่านจาก Redis จริง
 	require.NoError(t, db.Exec("DELETE FROM links WHERE short_code = ?", created.Code).Error)

@@ -6,12 +6,19 @@ import (
 	"gorm.io/gorm"
 
 	"goshort/internal/config"
+	"goshort/internal/metrics"
+	"goshort/internal/model"
+	"goshort/internal/repository"
+	"goshort/internal/worker"
 )
 
 type Deps struct {
-	DB    *gorm.DB
-	Redis *redis.Client
-	Cfg   config.Config
+	DB      *gorm.DB
+	Redis   *redis.Client
+	Cfg     config.Config
+	Pool    *worker.Pool
+	Clicks  *repository.ClickStore
+	Metrics *metrics.Metrics
 }
 
 // ลำดับการลงทะเบียนสำคัญ: Fiber match ตามลำดับ และ GET /:code เป็น wildcard
@@ -35,28 +42,17 @@ func New(d Deps) *fiber.App {
 	return app
 }
 
-func registerOps(app *fiber.App, d Deps) {
-	app.Get("/health", func(c *fiber.Ctx) error {
-		pg, rds := "up", "up"
+func (d Deps) syncPoolCounters() {
+	if d.Pool == nil {
+		return
+	}
+	d.Metrics.SetDropped(d.Pool.Dropped())
+	d.Metrics.SetWritten(d.Pool.Written())
+}
 
-		sql, err := d.DB.DB()
-		if err != nil || sql.PingContext(c.Context()) != nil {
-			pg = "down"
-		}
-		if d.Redis.Ping(c.Context()).Err() != nil {
-			rds = "down"
-		}
-
-		status := "ok"
-		code := fiber.StatusOK
-		if pg == "down" || rds == "down" {
-			status, code = "degraded", fiber.StatusServiceUnavailable
-		}
-
-		return c.Status(code).JSON(fiber.Map{
-			"status":   status,
-			"postgres": pg,
-			"redis":    rds,
-		})
-	})
+func (d Deps) totalClicks(c *fiber.Ctx) int64 {
+	var total int64
+	d.DB.WithContext(c.Context()).Model(&model.Link{}).
+		Select("COALESCE(SUM(click_count), 0)").Scan(&total)
+	return total
 }

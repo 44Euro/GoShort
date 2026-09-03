@@ -1,6 +1,10 @@
 package handler_test
 
 import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -15,7 +19,10 @@ import (
 
 	"goshort/internal/config"
 	"goshort/internal/handler"
+	"goshort/internal/metrics"
 	"goshort/internal/model"
+	"goshort/internal/repository"
+	"goshort/internal/worker"
 )
 
 // integration test ต้องมี postgres จริง ถ้าไม่ตั้ง env ก็ข้ามไปแทนที่จะ fail
@@ -43,22 +50,83 @@ func testRedis(t *testing.T) *redis.Client {
 
 func testConfig() config.Config {
 	return config.Config{
-		BaseURL:    "http://localhost:8080",
-		JWTSecret:  "test-secret",
-		CacheTTL:   time.Hour,
-		TrustProxy: true,
-		Dev:        true,
+		BaseURL:         "http://localhost:8080",
+		JWTSecret:       "test-secret",
+		CacheTTL:        time.Hour,
+		TrustProxy:      true,
+		ClickBufferSize: 1000,
+		ClickBatchSize:  50,
+		Dev:             true,
 	}
+}
+
+type env struct {
+	app  *fiber.App
+	db   *gorm.DB
+	rdb  *redis.Client
+	pool *worker.Pool
 }
 
 func newApp(t *testing.T) *fiber.App {
 	t.Helper()
-	app, _, _ := newAppWithDeps(t)
-	return app
+	return newEnv(t).app
 }
 
 func newAppWithDeps(t *testing.T) (*fiber.App, *gorm.DB, *redis.Client) {
 	t.Helper()
+	e := newEnv(t)
+	return e.app, e.db, e.rdb
+}
+
+func newEnv(t *testing.T) env {
+	t.Helper()
 	db, rdb := testDB(t), testRedis(t)
-	return handler.New(handler.Deps{DB: db, Redis: rdb, Cfg: testConfig()}), db, rdb
+	cfg := testConfig()
+
+	clicks := repository.NewClickStore(db)
+	pool := worker.New(clicks, worker.Config{
+		Workers:    2,
+		Buffer:     cfg.ClickBufferSize,
+		BatchSize:  cfg.ClickBatchSize,
+		FlushEvery: 20 * time.Millisecond,
+	})
+	pool.Start()
+	t.Cleanup(func() { _ = pool.Shutdown(context.Background()) })
+
+	m := metrics.New()
+	m.TrackQueue(
+		func() float64 { return float64(pool.Depth()) },
+		func() float64 { return float64(pool.Capacity()) },
+	)
+
+	app := handler.New(handler.Deps{
+		DB: db, Redis: rdb, Cfg: cfg,
+		Pool: pool, Clicks: clicks, Metrics: m,
+	})
+	return env{app: app, db: db, rdb: rdb, pool: pool}
+}
+
+// รอให้ pipeline เขียนของค้างจนหมด: คิวว่าง แล้วยอดที่เขียนไปนิ่งข้ามรอบ flush
+func (e env) drain(t *testing.T) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		if e.pool.Depth() != 0 {
+			return false
+		}
+		before := e.pool.Written()
+		time.Sleep(60 * time.Millisecond)
+		return e.pool.Depth() == 0 && e.pool.Written() == before
+	}, 10*time.Second, 20*time.Millisecond)
+}
+
+func readBody(t *testing.T, res *http.Response) string {
+	t.Helper()
+	b, err := io.ReadAll(res.Body)
+	require.NoError(t, err)
+	return string(b)
+}
+
+func decode(t *testing.T, res *http.Response, v any) {
+	t.Helper()
+	require.NoError(t, json.NewDecoder(res.Body).Decode(v))
 }
