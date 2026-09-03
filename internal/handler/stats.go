@@ -46,7 +46,7 @@ func registerStats(app *fiber.App, d Deps) {
 	app.Get("/api/links/:code/stats",
 		middleware.RateLimit(d.Redis, "stats", 60, time.Minute),
 		func(c *fiber.Ctx) error {
-			link, err := links.ByCode(c.Context(), c.Params("code"))
+			link, err := links.ByCode(c.UserContext(), c.Params("code"))
 			if err != nil {
 				if repository.IsNotFound(err) {
 					return fail(c, fiber.StatusNotFound, "no such link")
@@ -54,12 +54,12 @@ func registerStats(app *fiber.App, d Deps) {
 				return err
 			}
 
-			out, err := cached(d, c.Context(), "agg:stats:"+link.ShortCode, func() (linkStats, error) {
-				series, err := stats.DailyForLink(c.Context(), link.ID, repository.SeriesDays)
+			out, err := cached(d, c.UserContext(), "agg:stats:"+link.ShortCode, func() (linkStats, error) {
+				series, err := stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
 				if err != nil {
 					return linkStats{}, err
 				}
-				refs, err := stats.Referrers(c.Context(), &link.ID, 6)
+				refs, err := stats.Referrers(c.UserContext(), &link.ID, 6)
 				if err != nil {
 					return linkStats{}, err
 				}
@@ -83,7 +83,7 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
 
 	g.Get("/links/:code/analytics", func(c *fiber.Ctx) error {
-		link, err := links.ByCode(c.Context(), c.Params("code"))
+		link, err := links.ByCode(c.UserContext(), c.Params("code"))
 		if err != nil {
 			if repository.IsNotFound(err) {
 				return fail(c, fiber.StatusNotFound, "no such link")
@@ -91,25 +91,25 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 			return err
 		}
 
-		series, err := stats.DailyForLink(c.Context(), link.ID, repository.SeriesDays)
+		series, err := stats.DailyForLink(c.UserContext(), link.ID, repository.SeriesDays)
 		if err != nil {
 			return err
 		}
-		refs, err := stats.Referrers(c.Context(), &link.ID, 6)
+		refs, err := stats.Referrers(c.UserContext(), &link.ID, 6)
 		if err != nil {
 			return err
 		}
-		unique, err := stats.UniqueVisitors(c.Context(), link.ID)
+		unique, err := stats.UniqueVisitors(c.UserContext(), link.ID)
 		if err != nil {
 			return err
 		}
-		events, err := stats.RecentEvents(c.Context(), link.ID, 8)
+		events, err := stats.RecentEvents(c.UserContext(), link.ID, 8)
 		if err != nil {
 			return err
 		}
 
 		cacheState := fiber.Map{"warm": false, "ttl_seconds": 0}
-		if ttl, ok := lc.TTL(c.Context(), link.ShortCode); ok {
+		if ttl, ok := lc.TTL(c.UserContext(), link.ShortCode); ok {
 			cacheState = fiber.Map{"warm": true, "ttl_seconds": int(ttl.Seconds())}
 		}
 
@@ -150,16 +150,16 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 			Referrers []repository.Referrer `json:"referrers"`
 		}
 
-		out, err := cached(d, c.Context(), "agg:overview", func() (overview, error) {
-			series, err := stats.DailyForAll(c.Context(), repository.SeriesDays)
+		out, err := cached(d, c.UserContext(), "agg:overview", func() (overview, error) {
+			series, err := stats.DailyForAll(c.UserContext(), repository.SeriesDays)
 			if err != nil {
 				return overview{}, err
 			}
-			refs, err := stats.Referrers(c.Context(), nil, 6)
+			refs, err := stats.Referrers(c.UserContext(), nil, 6)
 			if err != nil {
 				return overview{}, err
 			}
-			all, err := links.All(c.Context())
+			all, err := links.All(c.UserContext())
 			if err != nil {
 				return overview{}, err
 			}

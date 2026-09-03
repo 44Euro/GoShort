@@ -28,7 +28,7 @@ func registerRedirect(app *fiber.App, d Deps) {
 		code := c.Params("code")
 
 		if !d.Cfg.SyncMode {
-			if e, ok := lc.Get(c.Context(), code); ok {
+			if e, ok := lc.Get(c.UserContext(), code); ok {
 				d.Metrics.CacheHit()
 				d.recordClick(c, model.Link{ID: e.ID})
 				return c.Redirect(e.LongURL, fiber.StatusFound)
@@ -36,7 +36,7 @@ func registerRedirect(app *fiber.App, d Deps) {
 			d.Metrics.CacheMiss()
 		}
 
-		link, err := links.ByCode(c.Context(), code)
+		link, err := links.ByCode(c.UserContext(), code)
 		if err != nil {
 			if repository.IsNotFound(err) {
 				return spaNotFound(c, index)
@@ -48,7 +48,7 @@ func registerRedirect(app *fiber.App, d Deps) {
 		}
 
 		if !d.Cfg.SyncMode {
-			lc.Set(c.Context(), code, cache.Entry{ID: link.ID, LongURL: link.LongURL})
+			lc.Set(c.UserContext(), code, cache.Entry{ID: link.ID, LongURL: link.LongURL})
 		}
 		d.recordClick(c, link)
 

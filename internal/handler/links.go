@@ -42,7 +42,7 @@ func registerLinks(app *fiber.App, d Deps) {
 			}
 
 			if req.Alias == "" {
-				link, err := links.Create(c.Context(), req.LongURL, expiresAt)
+				link, err := links.Create(c.UserContext(), req.LongURL, expiresAt)
 				if err != nil {
 					return err
 				}
@@ -56,7 +56,7 @@ func registerLinks(app *fiber.App, d Deps) {
 				return fail(c, fiber.StatusConflict, "that alias is reserved, pick another one")
 			}
 
-			link, err := links.CreateWithAlias(c.Context(), req.Alias, req.LongURL, expiresAt)
+			link, err := links.CreateWithAlias(c.UserContext(), req.Alias, req.LongURL, expiresAt)
 			if errors.Is(err, repository.ErrCodeTaken) {
 				return fail(c, fiber.StatusConflict, "that alias is already taken, pick another one")
 			}

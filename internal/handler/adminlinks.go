@@ -16,11 +16,11 @@ func registerAdminLinks(g fiber.Router, d Deps) {
 	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
 
 	g.Get("/links", func(c *fiber.Ctx) error {
-		all, err := links.All(c.Context())
+		all, err := links.All(c.UserContext())
 		if err != nil {
 			return err
 		}
-		series, err := stats.DailyForEachLink(c.Context(), repository.SeriesDays)
+		series, err := stats.DailyForEachLink(c.UserContext(), repository.SeriesDays)
 		if err != nil {
 			return err
 		}
@@ -46,26 +46,26 @@ func registerAdminLinks(g fiber.Router, d Deps) {
 
 	g.Delete("/links/:code", func(c *fiber.Ctx) error {
 		code := c.Params("code")
-		if err := links.Delete(c.Context(), code); err != nil {
+		if err := links.Delete(c.UserContext(), code); err != nil {
 			if repository.IsNotFound(err) {
 				return fail(c, fiber.StatusNotFound, "no such link")
 			}
 			return err
 		}
 		// ต้องล้าง cache ทันที ไม่ใช่รอ TTL ไม่งั้นลิงก์ที่ลบแล้วยังเด้งได้อีกชั่วโมง
-		_ = lc.Invalidate(c.Context(), code)
+		_ = lc.Invalidate(c.UserContext(), code)
 		return c.JSON(fiber.Map{"deleted": code})
 	})
 
 	g.Post("/links/:code/invalidate-cache", func(c *fiber.Ctx) error {
 		code := c.Params("code")
-		if _, err := links.ByCode(c.Context(), code); err != nil {
+		if _, err := links.ByCode(c.UserContext(), code); err != nil {
 			if repository.IsNotFound(err) {
 				return fail(c, fiber.StatusNotFound, "no such link")
 			}
 			return err
 		}
-		if err := lc.Invalidate(c.Context(), code); err != nil {
+		if err := lc.Invalidate(c.UserContext(), code); err != nil {
 			return err
 		}
 		return c.JSON(fiber.Map{"invalidated": code})

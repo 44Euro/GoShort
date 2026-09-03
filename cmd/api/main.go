@@ -5,10 +5,9 @@ import (
 	"log"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	"goshort/internal/config"
 	"goshort/internal/handler"
@@ -25,7 +24,12 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{TranslateError: true})
+	db, err := repository.Open(cfg.DatabaseURL, repository.PoolConfig{
+		MaxOpen:     cfg.DBMaxOpenConns,
+		MaxIdle:     cfg.DBMaxIdleConns,
+		MaxLifetime: 30 * time.Minute,
+		MaxIdleTime: 5 * time.Minute,
+	})
 	if err != nil {
 		log.Fatalf("postgres: %v", err)
 	}

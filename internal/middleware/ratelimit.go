@@ -13,7 +13,7 @@ import (
 func RateLimit(rdb *redis.Client, name string, limit int, window time.Duration) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		key := "rl:" + name + ":" + c.IP()
-		ctx := c.Context()
+		ctx := c.UserContext()
 
 		n, err := rdb.Incr(ctx, key).Result()
 		if err != nil {

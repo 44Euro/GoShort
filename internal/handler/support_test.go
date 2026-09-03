@@ -14,9 +14,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"goshort/internal/config"
 	"goshort/internal/handler"
@@ -35,8 +33,18 @@ func testDB(t *testing.T) *gorm.DB {
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set")
 	}
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Discard, TranslateError: true})
+	db, err := repository.Open(dsn, repository.PoolConfig{
+		MaxOpen: 10, MaxIdle: 10, MaxLifetime: time.Minute, MaxIdleTime: time.Minute, Quiet: true,
+	})
 	require.NoError(t, err)
+
+	// ทุกเทสต์เปิด pool ของตัวเอง ถ้าไม่ปิดจะสะสมจนชน max_connections ของ Postgres
+	t.Cleanup(func() {
+		if sqlDB, err := db.DB(); err == nil {
+			_ = sqlDB.Close()
+		}
+	})
+
 	require.NoError(t, model.Migrate(db))
 	require.NoError(t, model.Truncate(db))
 	return db

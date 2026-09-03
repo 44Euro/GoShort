@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/utils"
 
 	"goshort/internal/model"
 	"goshort/internal/worker"
@@ -19,12 +20,15 @@ func hashIP(ip string) string {
 	return hex.EncodeToString(sum[:])
 }
 
+// ค่าจาก c.Get() ชี้เข้า buffer ที่ fasthttp เอากลับไปใช้กับ request ถัดไปทันที
+// ที่ handler จบ ต้อง copy ก่อนส่งเข้า channel ไม่งั้นข้อมูลที่ worker เขียนลง DB
+// จะเป็นสตริงลูกผสมของหลาย request (ดู live_test.go)
 func (d Deps) recordClick(c *fiber.Ctx, link model.Link) {
 	e := worker.Event{
 		LinkID:    link.ID,
 		IPHash:    hashIP(c.IP()),
-		UserAgent: c.Get(fiber.HeaderUserAgent),
-		Referrer:  c.Get(fiber.HeaderReferer),
+		UserAgent: utils.CopyString(c.Get(fiber.HeaderUserAgent)),
+		Referrer:  utils.CopyString(c.Get(fiber.HeaderReferer)),
 		At:        time.Now().UTC(),
 	}
 

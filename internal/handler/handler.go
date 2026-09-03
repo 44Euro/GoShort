@@ -61,7 +61,7 @@ func (d Deps) syncPoolCounters() {
 
 func (d Deps) totalClicks(c *fiber.Ctx) int64 {
 	var total int64
-	d.DB.WithContext(c.Context()).Model(&model.Link{}).
+	d.DB.WithContext(c.UserContext()).Model(&model.Link{}).
 		Select("COALESCE(SUM(click_count), 0)").Scan(&total)
 	return total
 }

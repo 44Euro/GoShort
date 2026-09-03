@@ -11,10 +11,10 @@ func registerOps(app *fiber.App, d Deps) {
 		pg, rds := "up", "up"
 
 		sql, err := d.DB.DB()
-		if err != nil || sql.PingContext(c.Context()) != nil {
+		if err != nil || sql.PingContext(c.UserContext()) != nil {
 			pg = "down"
 		}
-		if d.Redis.Ping(c.Context()).Err() != nil {
+		if d.Redis.Ping(c.UserContext()).Err() != nil {
 			rds = "down"
 		}
 

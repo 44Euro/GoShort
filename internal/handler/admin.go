@@ -22,7 +22,7 @@ func registerAdmin(app *fiber.App, d Deps) {
 			return fail(c, fiber.StatusBadRequest, "request body must be JSON")
 		}
 
-		admin, ok := admins.Authenticate(c.Context(), req.Email, req.Password)
+		admin, ok := admins.Authenticate(c.UserContext(), req.Email, req.Password)
 		if !ok {
 			return fail(c, fiber.StatusUnauthorized, "email or password is wrong")
 		}
