@@ -135,3 +135,9 @@ func decode(t *testing.T, res *http.Response, v any) {
 	t.Helper()
 	require.NoError(t, json.NewDecoder(res.Body).Decode(v))
 }
+
+func (e env) admin(t *testing.T) *http.Cookie {
+	t.Helper()
+	e.seedAdmin(t, "admin@goshort.dev", "goshort-demo")
+	return sessionCookie(t, login(t, e.app, "admin@goshort.dev", "goshort-demo"))
+}

@@ -82,3 +82,20 @@ func (r *LinkRepo) ByCode(ctx context.Context, code string) (model.Link, error) 
 }
 
 func IsNotFound(err error) bool { return errors.Is(err, gorm.ErrRecordNotFound) }
+
+func (r *LinkRepo) All(ctx context.Context) ([]model.Link, error) {
+	var links []model.Link
+	err := r.db.WithContext(ctx).Order("click_count desc").Find(&links).Error
+	return links, err
+}
+
+func (r *LinkRepo) Delete(ctx context.Context, code string) error {
+	res := r.db.WithContext(ctx).Where("short_code = ?", code).Delete(&model.Link{})
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}

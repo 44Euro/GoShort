@@ -45,4 +45,6 @@ func registerAdmin(app *fiber.App, d Deps) {
 	guarded.Get("/me", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"email": c.Locals("admin_email")})
 	})
+
+	registerAdminLinks(guarded, d)
 }
