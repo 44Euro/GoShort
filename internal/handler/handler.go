@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"io/fs"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -13,6 +15,7 @@ import (
 )
 
 type Deps struct {
+	Assets  fs.FS
 	DB      *gorm.DB
 	Redis   *redis.Client
 	Cfg     config.Config
@@ -37,6 +40,10 @@ func New(d Deps) *fiber.App {
 	registerLinks(app, d)
 	registerAdmin(app, d)
 	registerStats(app, d)
+
+	if d.Assets != nil {
+		registerSPA(app, d.Assets)
+	}
 
 	// ต้องอยู่ท้ายสุด
 	registerRedirect(app, d)

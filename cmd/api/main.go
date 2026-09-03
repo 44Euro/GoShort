@@ -16,6 +16,7 @@ import (
 	"goshort/internal/model"
 	"goshort/internal/repository"
 	"goshort/internal/worker"
+	"goshort/web"
 )
 
 func main() {
@@ -54,7 +55,8 @@ func main() {
 	)
 
 	app := handler.New(handler.Deps{
-		DB: db, Redis: rdb, Cfg: cfg,
+		Assets: web.Dist(),
+		DB:     db, Redis: rdb, Cfg: cfg,
 		Pool: pool, Clicks: clicks, Metrics: m,
 	})
 

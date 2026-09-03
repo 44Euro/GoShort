@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"io/fs"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,6 +15,11 @@ import (
 func registerRedirect(app *fiber.App, d Deps) {
 	links := repository.NewLinkRepo(d.DB)
 	lc := cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
+
+	var index []byte
+	if d.Assets != nil {
+		index, _ = fs.ReadFile(d.Assets, "index.html")
+	}
 
 	app.Get("/:code", func(c *fiber.Ctx) error {
 		started := time.Now()
@@ -33,12 +39,12 @@ func registerRedirect(app *fiber.App, d Deps) {
 		link, err := links.ByCode(c.Context(), code)
 		if err != nil {
 			if repository.IsNotFound(err) {
-				return fail(c, fiber.StatusNotFound, "no such link")
+				return spaNotFound(c, index)
 			}
 			return err
 		}
 		if link.ExpiresAt != nil && link.ExpiresAt.Before(time.Now()) {
-			return fail(c, fiber.StatusNotFound, "no such link")
+			return spaNotFound(c, index)
 		}
 
 		if !d.Cfg.SyncMode {

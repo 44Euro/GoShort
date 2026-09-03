@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"goshort/internal/model"
 	"goshort/internal/repository"
 	"goshort/internal/worker"
+	"goshort/web"
 )
 
 // integration test ต้องมี postgres จริง ถ้าไม่ตั้ง env ก็ข้ามไปแทนที่จะ fail
@@ -78,7 +80,17 @@ func newAppWithDeps(t *testing.T) (*fiber.App, *gorm.DB, *redis.Client) {
 	return e.app, e.db, e.rdb
 }
 
+func newEnvWithAssets(t *testing.T) env {
+	t.Helper()
+	return build(t, web.Dist())
+}
+
 func newEnv(t *testing.T) env {
+	t.Helper()
+	return build(t, nil)
+}
+
+func build(t *testing.T, assets fs.FS) env {
 	t.Helper()
 	db, rdb := testDB(t), testRedis(t)
 	cfg := testConfig()
@@ -100,7 +112,8 @@ func newEnv(t *testing.T) env {
 	)
 
 	app := handler.New(handler.Deps{
-		DB: db, Redis: rdb, Cfg: cfg,
+		Assets: assets,
+		DB:     db, Redis: rdb, Cfg: cfg,
 		Pool: pool, Clicks: clicks, Metrics: m,
 	})
 	return env{app: app, db: db, rdb: rdb, pool: pool}

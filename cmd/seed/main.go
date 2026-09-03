@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -8,6 +9,7 @@ import (
 
 	"goshort/internal/config"
 	"goshort/internal/model"
+	"goshort/internal/repository"
 )
 
 func main() {
@@ -24,5 +26,11 @@ func main() {
 		log.Fatalf("migrate: %v", err)
 	}
 
-	log.Println("seed: schema ready")
+	if cfg.AdminPassword == "" {
+		log.Fatal("ADMIN_PASSWORD is required to seed the administrator")
+	}
+	if err := repository.NewAdminRepo(db).Upsert(context.Background(), cfg.AdminEmail, cfg.AdminPassword); err != nil {
+		log.Fatalf("seed admin: %v", err)
+	}
+	log.Printf("seeded administrator %s", cfg.AdminEmail)
 }
