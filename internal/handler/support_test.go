@@ -64,6 +64,7 @@ func testConfig() config.Config {
 		JWTSecret:       "test-secret",
 		CacheTTL:        time.Hour,
 		TrustProxy:      true,
+		AdminEnabled:    true,
 		ClickBufferSize: 1000,
 		ClickBatchSize:  50,
 	}
@@ -87,20 +88,23 @@ func newAppWithDeps(t *testing.T) (*fiber.App, *gorm.DB, *redis.Client) {
 	return e.app, e.db, e.rdb
 }
 
-func newEnvWithAssets(t *testing.T) env {
+func newEnvWithAssets(t *testing.T, tweaks ...func(*config.Config)) env {
 	t.Helper()
-	return build(t, web.Dist())
+	return build(t, web.Dist(), tweaks...)
 }
 
-func newEnv(t *testing.T) env {
+func newEnv(t *testing.T, tweaks ...func(*config.Config)) env {
 	t.Helper()
-	return build(t, nil)
+	return build(t, nil, tweaks...)
 }
 
-func build(t *testing.T, assets fs.FS) env {
+func build(t *testing.T, assets fs.FS, tweaks ...func(*config.Config)) env {
 	t.Helper()
 	db, rdb := testDB(t), testRedis(t)
 	cfg := testConfig()
+	for _, tweak := range tweaks {
+		tweak(&cfg)
+	}
 
 	clicks := repository.NewClickStore(db)
 	pool := worker.New(clicks, worker.Config{

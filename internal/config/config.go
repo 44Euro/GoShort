@@ -18,6 +18,11 @@ type Config struct {
 	AdminEmail    string
 	AdminPassword string
 
+	// ปิดแล้ว route ของ admin จะไม่ถูกลงทะเบียนเลย ไม่ใช่ลงทะเบียนแล้วกันด้วย guard
+	// instance ที่รับ traffic สาธารณะจึงไม่มีเส้นให้ยิงตั้งแต่แรก
+	// ปริยายเป็นเปิด เพราะการรัน instance เดียวทำทั้งสองหน้าที่คือกรณีปกติของระบบขนาดนี้
+	AdminEnabled bool
+
 	DBMaxOpenConns    int
 	DBMaxIdleConns    int
 	ClickBufferSize   int
@@ -52,6 +57,7 @@ func Load() (Config, error) {
 		JWTSecret:         env("JWT_SECRET", ""),
 		AdminEmail:        env("ADMIN_EMAIL", "admin@goshort.dev"),
 		AdminPassword:     env("ADMIN_PASSWORD", ""),
+		AdminEnabled:      envBool("ADMIN_ENABLED", true),
 		DBMaxOpenConns:    envInt("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:    envInt("DB_MAX_IDLE_CONNS", 25),
 		ClickBufferSize:   envInt("CLICK_BUFFER_SIZE", 1000),

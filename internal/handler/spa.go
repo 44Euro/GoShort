@@ -10,12 +10,15 @@ import (
 )
 
 // path ที่ SPA เป็นเจ้าของ ลงทะเบียนก่อน /:code เพื่อไม่ให้ redirect handler กิน
-var spaRoutes = []string{
-	"/", "/login", "/s", "/s/:code",
-	"/admin", "/admin/analytics", "/admin/links", "/admin/links/:code",
+var publicSPARoutes = []string{"/", "/s", "/s/:code"}
+
+// บน instance ที่ไม่ได้ทำหน้าที่ admin path พวกนี้ต้องไม่ถูกจอง จะได้ตกไปที่ /:code
+// แล้วได้ 404 จริง — บน host นั้นหน้าเหล่านี้ไม่มีอยู่
+var adminSPARoutes = []string{
+	"/login", "/admin", "/admin/analytics", "/admin/links", "/admin/links/:code",
 }
 
-func registerSPA(app *fiber.App, assets fs.FS) {
+func registerSPA(app *fiber.App, assets fs.FS, adminEnabled bool) {
 	index, err := fs.ReadFile(assets, "index.html")
 	if err != nil {
 		return
@@ -36,7 +39,13 @@ func registerSPA(app *fiber.App, assets fs.FS) {
 		}
 	}
 
-	for _, r := range spaRoutes {
+	for _, r := range publicSPARoutes {
+		app.Get(r, shell(fiber.StatusOK))
+	}
+	if !adminEnabled {
+		return
+	}
+	for _, r := range adminSPARoutes {
 		app.Get(r, shell(fiber.StatusOK))
 	}
 }

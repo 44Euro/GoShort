@@ -52,11 +52,13 @@ func New(d Deps) *fiber.App {
 
 	registerOps(app, d)
 	registerLinks(app, d)
-	registerAdmin(app, d)
+	if d.Cfg.AdminEnabled {
+		registerAdmin(app, d)
+	}
 	registerStats(app, d)
 
 	if d.Assets != nil {
-		registerSPA(app, d.Assets)
+		registerSPA(app, d.Assets, d.Cfg.AdminEnabled)
 	}
 
 	// ต้องอยู่ท้ายสุด
