@@ -53,6 +53,66 @@ set so nobody can mint a link at `/admin`.
 
 ---
 
+## Deployment roles
+
+The same binary runs in two roles, decided by `ADMIN_ENABLED`. On a public instance the admin
+routes are **never registered**, so they answer `404` rather than `401`: the path does not exist on
+that host, instead of existing and being guarded. `docker-compose.yml` runs one of each, from one
+image, so the split is visible without running anything.
+
+| | `ADMIN_ENABLED=0` | `ADMIN_ENABLED=1` |
+|---|---|---|
+| `POST /api/admin/login` | `404` — not in the router | `200` |
+| `GET /login`, `/admin` | `404` — falls through to `/:code` | the console |
+| admin JS | the 20 kB console chunk is never fetched | fetched on demand, after the first paint |
+| `GET /api/admin/me` on page load | not sent | sent |
+| `/`, `/s/:code`, `/:code`, `/health`, `/metrics` | unchanged | unchanged |
+
+A test asserts the 404, not the README: a `401` there would mean the route is still mounted.
+
+The admin console is code-split out of the first bundle, and the public page skips the
+`/api/admin/me` session probe entirely. **Neither is a security boundary** — the chunk is still
+served from `/assets` and can be fetched directly. The boundary is the server returning 404.
+
+The SPA learns which role it is talking to from a placeholder the server substitutes into the HTML
+shell once at boot. Asking the API would cost a round trip on the page that most needs to be fast.
+
+[ADR 0001](docs/adr/0001-deployment-roles-via-one-config-flag.md) records why this is a flag rather
+than two binaries, and why the console is not hosted separately — the short version is that a
+static host on another domain is *cross-site*, so the `SameSite=Lax` session cookie would not be
+sent at all, and getting it working means `SameSite=None` plus a hand-rolled CSRF token: more code
+for a weaker posture.
+
+---
+
+## Running more than one instance
+
+| | shared across instances? | |
+|---|---|---|
+| link cache | **yes** — Redis | one instance's warm entry is everyone's |
+| rate limit counters | **yes** — Redis `INCR` per IP | the quota is global, not per replica |
+| `click_count` | **yes** — `UPDATE … SET click_count = click_count + n` | atomic in the database, never read-then-write in Go |
+| click queue | **no** — a Go channel per process | a drop is that process's drop, and `queue_depth` is that process's depth |
+| Prometheus metrics | **no** — an in-process registry | scrape every instance; the built-in dashboard is deliberately a single-instance view |
+| schema migration | **serialised** — a Postgres advisory lock | see the last entry under *Bugs the tests found* |
+
+Health checks are split along the same line, because a load balancer acts on them:
+
+| | checks | when Redis is down | when Postgres is down |
+|---|---|---|---|
+| `GET /health` | nothing — liveness | `200` | `200` |
+| `GET /health/ready` | Postgres, and reports Redis | `200 {"status":"degraded"}` | `503` |
+
+**A dead cache must not empty the load balancer.** The redirect falls back to Postgres and the rate
+limiter fails open, so an instance with no cache still answers correctly — just slower. Draining
+every instance the moment Redis blinks turns a cache outage into a total outage. Postgres is
+different: a cache miss has nothing to fall back to below it.
+
+Liveness deliberately touches nothing. A liveness probe that pings the database restarts healthy
+processes whenever the database is merely *slow*, which is the failure it exists to prevent.
+
+---
+
 ## Benchmark
 
 Both rows come from the **same binary**, switched only by `GOSHORT_SYNC_MODE`, which bypasses Redis
@@ -158,6 +218,14 @@ a link cached while still valid went on answering `302` until the cache entry ag
 was supposed to cover this only exercised a cold cache. The entry now carries `ExpiresAt`, and the
 Redis key's TTL is capped at whatever is left of the link's life.
 
+**Two instances could not boot against a fresh database.** `AutoMigrate` asks Postgres whether an
+index exists and then creates it — a plain time-of-check-to-time-of-use race. Started together,
+both processes passed the check and both issued `CREATE`, and one died with
+`duplicate key value violates unique constraint "pg_class_relname_nsp_index"`. It reproduced three
+times out of three. Migration now runs inside a transaction holding `pg_advisory_xact_lock`, so
+instances queue instead of colliding. The plain `pg_advisory_lock` is the wrong tool here: it binds
+to a connection, and the unlock can be handed a different connection from the pool.
+
 ---
 
 ## Metrics
@@ -177,6 +245,32 @@ not something to copy into a system where operational metrics are sensitive.
 
 ---
 
+## Logging
+
+One JSON line per request, including `/:code`:
+
+```json
+{"time":"...","level":"INFO","msg":"request","method":"GET","path":"/gopher","status":302,"duration_ms":1.9,"request_id":"56c6e84519ce77e0"}
+```
+
+`X-Request-ID` is used if the caller sends one, so an id assigned upstream survives, and it comes
+back on the response so a bug report can name the exact request. It is capped at 64 characters:
+the value is attacker-controlled and lands in the log stream. It is copied out of the fasthttp
+buffer before being stored, for the same reason the referrer was — see *Bugs the tests found*.
+
+GORM's own logger is routed through `slog` too, with colour off and `ErrRecordNotFound` ignored.
+Before that, every 404 redirect emitted a coloured multi-line block on stderr, which made "the
+logs are JSON" false in practice. `LOG_FORMAT=text` (the default) is for reading in a terminal;
+`LOG_FORMAT=json` is for anything that indexes fields.
+
+Worker-pool lines carry no request id. Click events are batched across requests, so the
+one-to-one relationship a request id implies does not exist there.
+
+The access log runs on the redirect path with no sampling. Its cost was **not measured** — no claim
+is made about it, and it is the first thing to sample if it ever shows up in a profile.
+
+---
+
 ## API
 
 **Public**
@@ -187,7 +281,9 @@ not something to copy into a system where operational metrics are sensitive.
 | `GET` | `/api/links/:code/stats` | clicks, 14-day series, referrers; 60 req/min/IP |
 | `GET` | `/api/stats/public` | live hit rate, p99, dropped, total clicks |
 | `GET` | `/:code` | 302, or the SPA shell with a real 404 |
-| `GET` | `/health`, `/metrics` | |
+| `GET` | `/health` | liveness — `200` while the process is alive, checks nothing |
+| `GET` | `/health/ready` | readiness — `503` without Postgres, `200 degraded` without Redis |
+| `GET` | `/metrics` | |
 
 **Admin** — JWT (HS256, 24 h) in an `httpOnly`, `SameSite=Lax` cookie. Not `localStorage`: an XSS bug
 should not be able to read the session. Every mutating route is `POST`/`DELETE`, which `Lax` already
@@ -208,3 +304,36 @@ Split by refresh rate on purpose: a two-second poll should not drag a `GROUP BY`
 
 Source IPs are SHA-256 hashed before they enter the channel — no code path holds a raw address after
 the handler — and only the first eight characters of a hash are ever returned to a client.
+
+---
+
+## What this is not
+
+This is a portfolio project, not a service. It is not hosted anywhere on purpose: a public URL
+shortener with no abuse controls is a liability, not a demo.
+
+These are the gaps, with what closing each would actually take:
+
+**Schema changes have no story.** `AutoMigrate` runs at boot. Concurrent boots are now safe, but
+there are no versioned migrations, no rollback, and nothing that would let a schema change land
+under live traffic. Closing it means a migration tool, a migrations table, and an expand/contract
+discipline for every column change.
+
+**Nothing pages anyone.** Dropped click events are counted and logged, and `/metrics` exposes them,
+but there is no alerting and no SLO, so "we lost events for an hour" is only visible to someone who
+happens to look. Closing it means Prometheus and Alertmanager, an error budget worth defending, and
+a person on call.
+
+**Tracing stops at this process.** A request id ties one process's log lines together and no
+further. Closing it means OpenTelemetry, a collector, and somewhere to keep the traces.
+
+**There is no deploy.** No target, no versioned artefacts, no rollback. `docker compose up` is the
+whole deployment story.
+
+**Links are anonymous and unowned.** Anyone can create one, a single seeded administrator sees all
+of them, and nothing checks where a link points. A real shortener needs phishing and malware
+scanning at creation time, an abuse reporting path, and per-account ownership before it can be
+opened to the public. That is the single largest reason this is not.
+
+Also worth stating plainly, since they are easy to miss: p99 is estimated from bucket edges rather
+than measured exactly, metrics reset on restart, and the built-in dashboard shows one instance.
