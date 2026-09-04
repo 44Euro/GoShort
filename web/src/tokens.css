@@ -40,10 +40,26 @@
   --color-accent-2-800: #573d14;
   --color-accent-2-900: #382810;
 
-  --font-heading: "Cormorant Garamond", system-ui, sans-serif;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
   /* semibold คือเพดานของหัวข้อใน UI — bold หนาเกินไปที่ขนาดเล็ก */
   --font-heading-weight: 600;
-  --font-body: "Lora", system-ui, sans-serif;
+  --font-body: "Lora", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* ตัวเลขทุกตัวบน UI ใช้ฟอนต์นี้ ไม่ใช่ --font-heading:
+     Cormorant Garamond ตั้งเลข oldstyle เป็นค่าเริ่มต้น (6 กับ 9 ห้อยลงใต้เส้นฐาน)
+     และซับเซ็ตที่ Google เสิร์ฟไม่มีตาราง tnum เลย ความกว้างเลขจึงไม่เท่ากัน
+     เกจที่รีเฟรชทุก 2 วิจะขยับซ้ายขวาตลอด Source Serif 4 มีทั้ง lnum และ tnum */
+  --font-numeric: "Source Serif 4", Georgia, serif;
+
+  /* ไล่ขนาดหัวข้อชุดเดียวของทั้งแอป — ก่อนหน้านี้ h1 มีสามขนาดที่ไม่ตรงกัน
+     (42 ที่ global, 46 ที่ page-head, 84 ที่ display) แล้วแต่ว่าหน้าไหนเขียนทับ */
+  --type-display: 76px;
+  --type-page: 44px;
+  --type-section: 25px;
+  --type-body: 15px;
+
+  /* ความยาวบรรทัดสูงสุดของเนื้อความ เกินนี้ตาไล่บรรทัดถัดไปไม่เจอ */
+  --measure: 64ch;
 
   --space-1: 4.6px;
   --space-2: 9.2px;
@@ -75,19 +91,30 @@ h1, h2, h3, h4 { font-family: var(--font-heading); font-weight: var(--font-headi
 
 
 *, *::before, *::after { box-sizing: border-box; }
-body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
+body {
+  margin: 0; font-size: var(--type-body); line-height: 1.65; font-weight: 400;
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
+  line-height: 1.14; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
+  text-wrap: balance;
 }
-h1 { font-size: 42px; }
-h2 { font-size: 32px; }
-h3 { font-size: 25px; }
-h4 { font-size: 20px; }
-h5 { font-size: 16px; }
-h6 { font-size: 13px; }
-h6 { letter-spacing: 0.08em; text-transform: uppercase; }
-p { margin: 0 0 var(--space-3); }
+/* ยิ่งตัวใหญ่ยิ่งต้องบีบ tracking เข้า ไม่งั้นช่องไฟดูหลวมกว่าตัวเล็กทั้งที่ค่าเท่ากัน */
+h1 { font-size: var(--type-page); line-height: 1.08; letter-spacing: -0.025em; }
+h2 { font-size: var(--type-section); letter-spacing: -0.018em; }
+h3 { font-size: 21px; }
+h4 { font-size: 18px; }
+h5 { font-size: 16px; letter-spacing: -0.01em; }
+h6 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); max-width: var(--measure); }
+
+/* ตัวเลขทุกที่ต้องผ่านคลาสนี้ ไม่ใช่ตั้ง font-family เองในคอมโพเนนต์ */
+.num {
+  font-family: var(--font-numeric);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: normal;
+}
 a { color: var(--color-accent); text-underline-offset: 3px; }
 img { display: block; max-width: 100%; }
 figure { margin: 0; }
@@ -209,9 +236,12 @@ textarea.input { min-height: 90px; resize: vertical; }
 .nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
 
 .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+/* หัวตารางเป็น label เหมือน .tile-label/.gauge-label จึงต้องเป็น mono ชุดเดียวกัน
+   ไม่ใช่ฟอนต์เนื้อความย่อขนาด */
 .table th {
-  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  text-align: left; font-family: var(--font-mono); font-weight: 400;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
   padding: var(--space-2); border-bottom: 1px solid var(--color-divider);
 }
 .table td {
@@ -220,22 +250,52 @@ textarea.input { min-height: 90px; resize: vertical; }
 }
 .table tbody tr:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
 
-.dialog-backdrop {
-  position: fixed; inset: 0; display: grid; place-items: center;
-  padding: var(--space-4);
-  background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
-}
+/* <dialog> ของ browser เอง: ได้ focus trap, Escape และ top layer มาฟรี
+   ไม่ต้องเขียน overlay + trap เองให้พลาด */
 .dialog {
-  width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
-  padding: var(--space-4); border-radius: var(--radius-lg);
-  background: var(--color-surface); box-shadow: var(--shadow-lg); border: 1px solid var(--color-divider);
+  width: min(460px, calc(100vw - 32px));
+  /* padding อยู่ที่ .dialog-inner ไม่ใช่ที่นี่ — คลิกบน backdrop จะมาโผล่เป็น
+     click ที่ตัว <dialog> เอง ถ้ามี padding ขอบในก็จะนับเป็น backdrop ไปด้วย */
+  padding: 0;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--shadow-lg);
+}
+.dialog-inner { padding: 30px 32px 26px; }
+.dialog::backdrop {
+  background: color-mix(in srgb, #1a1815 62%, transparent);
+  backdrop-filter: blur(2px);
+}
+.dialog[open] { animation: dialog-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.99); }
+  to { opacity: 1; transform: none; }
 }
 .dialog-title {
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 20px;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 10px 0 12px;
 }
-.dialog-body { font-size: 14px; opacity: 0.85; }
-.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+.dialog-body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--color-neutral-700);
+  margin: 0;
+  max-width: none;
+}
+.dialog-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 26px; padding-top: 20px;
+  border-top: 1px solid var(--color-divider);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dialog[open] { animation: none; }
+}
 
 
 
