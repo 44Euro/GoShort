@@ -12,7 +12,7 @@ import (
 // path ที่ SPA เป็นเจ้าของ ลงทะเบียนก่อน /:code เพื่อไม่ให้ redirect handler กิน
 var spaRoutes = []string{
 	"/", "/login", "/s", "/s/:code",
-	"/admin", "/admin/links", "/admin/links/:code",
+	"/admin", "/admin/analytics", "/admin/links", "/admin/links/:code",
 }
 
 func registerSPA(app *fiber.App, assets fs.FS) {

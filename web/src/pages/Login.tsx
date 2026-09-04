@@ -45,11 +45,9 @@ export function Login() {
           </div>
           <p
             style={{
-              maxWidth: 380,
               fontSize: 14,
-              lineHeight: 1.7,
+              lineHeight: 1.75,
               color: "var(--color-ink-muted)",
-              textAlign: "justify",
               margin: "26px 0 0",
             }}
           >

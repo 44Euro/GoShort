@@ -6,6 +6,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Links } from "./pages/Links";
 import { BootBlank, Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
+import { Overview } from "./pages/Overview";
 import { PublicStats } from "./pages/PublicStats";
 import { Shorten } from "./pages/Shorten";
 import { SessionProvider, useSession } from "./session";
@@ -21,6 +22,7 @@ export function App() {
 
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<Dashboard />} />
+          <Route path="/admin/analytics" element={<Overview />} />
           <Route path="/admin/links" element={<Links />} />
           <Route path="/admin/links/:code" element={<Analytics />} />
         </Route>

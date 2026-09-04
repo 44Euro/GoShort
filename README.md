@@ -11,9 +11,11 @@ is dropped and counted rather than allowed to block the person being redirected.
 | | |
 |---|---|
 | ![The public shortener](docs/screenshots/01-shorten.png) | ![The operations dashboard](docs/screenshots/05-dashboard.png) |
-| The public shortener — every figure is read live from the running process | The operations dashboard — gauges poll every 2s, aggregates every 30s |
+| The public shortener — every figure is read live from the running process | Operations — live gauges only, polled every 2s |
 | ![The register](docs/screenshots/06-links.png) | ![Per-link analytics](docs/screenshots/07-analytics.png) |
 | The register — sorted, filtered and paginated in the browser | Per-link analytics — cache state counts down against the real Redis TTL |
+| ![Aggregate analytics](docs/screenshots/10-overview.png) | ![Public link statistics](docs/screenshots/02-public-stats.png) |
+| Analytics — the fourteen-day rollup, cached 60s and polled every 30s | Public statistics — no account needed to read a link's numbers |
 
 ---
 
