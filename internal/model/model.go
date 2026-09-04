@@ -33,8 +33,19 @@ type AdminUser struct {
 	CreatedAt    time.Time
 }
 
+// AutoMigrate ถาม Postgres ว่ามี index อยู่แล้วหรือยังก่อนสั่งสร้าง สอง instance
+// ที่ boot พร้อมกันบน schema ใหม่จึงผ่าน check พร้อมกันแล้วชนกันตอน CREATE
+// ล็อกระดับ transaction ให้ผ่านทีละตัว แล้วปล่อยเองตอน commit — ใช้ pg_advisory_lock
+// ธรรมดาไม่ได้เพราะ lock ผูกกับ connection ส่วน unlock อาจไปได้อีก connection ใน pool
+const migrationLock = 4021873
+
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(&Link{}, &ClickEvent{}, &AdminUser{})
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", migrationLock).Error; err != nil {
+			return err
+		}
+		return tx.AutoMigrate(&Link{}, &ClickEvent{}, &AdminUser{})
+	})
 }
 
 func Truncate(db *gorm.DB) error {
