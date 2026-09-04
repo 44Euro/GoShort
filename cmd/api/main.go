@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
+	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,6 +26,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	slog.SetDefault(newLogger(cfg.LogFormat))
 
 	db, err := repository.Open(cfg.DatabaseURL, repository.PoolConfig{
 		MaxOpen:     cfg.DBMaxOpenConns,
@@ -69,15 +74,15 @@ func main() {
 		if cfg.SyncMode {
 			mode = "SYNC MODE (no cache, synchronous writes)"
 		}
-		log.Printf("goshort listening on :%s — %s, %d workers, buffer %d",
-			cfg.Port, mode, cfg.ClickWorkers, cfg.ClickBufferSize)
+		slog.Info("listening", "port", cfg.Port, "mode", mode,
+			"admin_role", cfg.AdminEnabled, "workers", cfg.ClickWorkers, "buffer", cfg.ClickBufferSize)
 		if err := app.Listen(":" + cfg.Port); err != nil {
 			log.Fatalf("listen: %v", err)
 		}
 	}()
 
 	<-ctx.Done()
-	log.Println("shutting down")
+	slog.Info("shutting down")
 
 	// ลำดับสำคัญ: หยุดรับ request ใหม่ก่อน แล้วค่อยไล่ของค้างในคิว
 	// สลับลำดับเมื่อไหร่ก็จะมี click ใหม่ไหลเข้าคิวหลังปิด worker แล้วหายไปเงียบ ๆ
@@ -85,15 +90,22 @@ func main() {
 	defer cancel()
 
 	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
-		log.Printf("http shutdown: %v", err)
+		slog.Error("http shutdown", "error", err)
 	}
 	if err := pool.Shutdown(shutdownCtx); err != nil {
-		log.Printf("click writer shutdown: %v", err)
+		slog.Error("click writer shutdown", "error", err)
 	}
 	if sqlDB, err := db.DB(); err == nil {
 		_ = sqlDB.Close()
 	}
 	_ = rdb.Close()
 
-	log.Println("bye")
+	slog.Info("bye")
+}
+
+func newLogger(format string) *slog.Logger {
+	if strings.EqualFold(format, "json") {
+		return slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	}
+	return slog.New(slog.NewTextHandler(os.Stdout, nil))
 }

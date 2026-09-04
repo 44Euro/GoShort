@@ -23,6 +23,9 @@ type Config struct {
 	// ปริยายเป็นเปิด เพราะการรัน instance เดียวทำทั้งสองหน้าที่คือกรณีปกติของระบบขนาดนี้
 	AdminEnabled bool
 
+	// text สำหรับอ่านตอน dev, json สำหรับให้เครื่องดูด
+	LogFormat string
+
 	DBMaxOpenConns    int
 	DBMaxIdleConns    int
 	ClickBufferSize   int
@@ -58,6 +61,7 @@ func Load() (Config, error) {
 		AdminEmail:        env("ADMIN_EMAIL", "admin@goshort.dev"),
 		AdminPassword:     env("ADMIN_PASSWORD", ""),
 		AdminEnabled:      envBool("ADMIN_ENABLED", true),
+		LogFormat:         env("LOG_FORMAT", "text"),
 		DBMaxOpenConns:    envInt("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:    envInt("DB_MAX_IDLE_CONNS", 25),
 		ClickBufferSize:   envInt("CLICK_BUFFER_SIZE", 1000),

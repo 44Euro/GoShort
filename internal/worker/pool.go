@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -59,6 +59,9 @@ func (p *Pool) Start() {
 	}
 }
 
+// log ของ worker ไม่มี request id เพราะ event ถูกรวมเป็น batch ข้าม request
+// ความสัมพันธ์หนึ่งต่อหนึ่งกับคำขอใดคำขอหนึ่งจึงไม่มีอยู่จริงตั้งแต่ต้น
+
 // Enqueue ต้องไม่บล็อกเด็ดขาด คนที่รออยู่คือคนกดลิงก์ ไม่ใช่ระบบหลังบ้าน
 // คิวเต็มแล้วยอมทิ้ง event ดีกว่าปล่อยให้ back-pressure วิ่งย้อนไปหาผู้ใช้
 func (p *Pool) Enqueue(e Event) bool {
@@ -68,7 +71,7 @@ func (p *Pool) Enqueue(e Event) bool {
 	default:
 		n := p.dropped.Add(1)
 		if n == 1 || n%1000 == 0 {
-			log.Printf("click buffer full, dropped %d events so far", n)
+			slog.Warn("click buffer full", "dropped_total", n, "capacity", cap(p.ch))
 		}
 		return false
 	}
@@ -90,10 +93,10 @@ func (p *Pool) Shutdown(ctx context.Context) error {
 
 	select {
 	case <-done:
-		log.Printf("click writer drained, %d events written", p.written.Load())
+		slog.Info("click writer drained", "written_total", p.written.Load())
 		return nil
 	case <-ctx.Done():
-		log.Printf("click writer shutdown timed out with %d events still queued", len(p.ch))
+		slog.Error("click writer shutdown timed out", "still_queued", len(p.ch))
 		return ctx.Err()
 	}
 }
@@ -131,7 +134,7 @@ func (p *Pool) flush(buf []Event) []Event {
 	defer cancel()
 
 	if err := p.store.WriteBatch(ctx, buf); err != nil {
-		log.Printf("click batch write failed, losing %d events: %v", len(buf), err)
+		slog.Error("click batch write failed", "lost_events", len(buf), "error", err)
 	} else {
 		p.written.Add(int64(len(buf)))
 	}

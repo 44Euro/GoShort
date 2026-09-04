@@ -10,6 +10,7 @@ import (
 	"goshort/internal/cache"
 	"goshort/internal/config"
 	"goshort/internal/metrics"
+	"goshort/internal/middleware"
 	"goshort/internal/repository"
 	"goshort/internal/worker"
 )
@@ -49,6 +50,8 @@ func New(d Deps) *fiber.App {
 		fc.ProxyHeader = fiber.HeaderXForwardedFor
 	}
 	app := fiber.New(fc)
+
+	app.Use(middleware.RequestID(), middleware.AccessLog())
 
 	registerOps(app, d)
 	registerLinks(app, d)
