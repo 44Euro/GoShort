@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import { api, type AdminLink } from "../api";
 import { Sparkline } from "../components/Charts";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { usePoll } from "../usePoll";
 
 type SortKey = "code" | "clicks" | "created_at";
@@ -20,6 +21,7 @@ export function Links() {
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [pending, setPending] = useState<AdminLink | null>(null);
 
   const all = data?.links ?? [];
 
@@ -57,14 +59,17 @@ export function Links() {
 
   const arrow = (key: SortKey) => (sort === key ? (desc ? "↓" : "↑") : "");
 
-  const remove = async (code: string) => {
-    if (!confirm(`Delete /${code}? The link stops resolving immediately.`)) return;
+  const remove = async () => {
+    if (!pending) return;
+    const { code } = pending;
     setBusy(code);
     setFailure(null);
     try {
       await api.del(`/api/admin/links/${encodeURIComponent(code)}`);
+      setPending(null);
       reload();
     } catch (err) {
+      setPending(null);
       setFailure(`Could not delete /${code}: ${(err as Error).message}`);
     } finally {
       setBusy(null);
@@ -160,7 +165,7 @@ export function Links() {
                       <button
                         className="btn btn-ghost"
                         style={{ fontSize: 12 }}
-                        onClick={() => remove(l.code)}
+                        onClick={() => setPending(l)}
                         disabled={busy === l.code}
                       >
                         {busy === l.code ? "…" : "Delete"}
@@ -199,6 +204,26 @@ export function Links() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={pending !== null}
+        kicker={pending ? `DELETE /api/admin/links/${pending.code}` : undefined}
+        title={pending ? `Delete /${pending.code}?` : ""}
+        body={
+          pending && (
+            <>
+              The row is removed and its Redis key is dropped in the same request, so{" "}
+              <span className="mono">/{pending.code}</span> stops resolving immediately rather than at the end
+              of its TTL. Its {pending.clicks.toLocaleString()} recorded{" "}
+              {pending.clicks === 1 ? "click goes" : "clicks go"} with it. This cannot be undone.
+            </>
+          )
+        }
+        confirmLabel="Delete the link"
+        busy={busy !== null}
+        onConfirm={remove}
+        onCancel={() => setPending(null)}
+      />
     </div>
   );
 }

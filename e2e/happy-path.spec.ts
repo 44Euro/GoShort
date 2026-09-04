@@ -43,8 +43,10 @@ test("shorten, redirect, see the click, then delete it", async ({ page, request,
   const row = page.getByRole("row").filter({ hasText: `/${code}` });
   await expect(row).toBeVisible();
 
-  page.once("dialog", (d) => d.accept());
   await row.getByRole("button", { name: "Delete" }).click();
+  const confirm = page.getByRole("dialog");
+  await expect(confirm.getByText(`Delete /${code}?`)).toBeVisible();
+  await confirm.getByRole("button", { name: "Delete the link" }).click();
   await expect(row).toHaveCount(0);
 
   const gone = await request.get(`${baseURL}/${code}`, { maxRedirects: 0 });
