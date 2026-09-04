@@ -35,10 +35,11 @@ func spaShell(assets fs.FS, adminEnabled bool) []byte {
 	return bytes.ReplaceAll(index, []byte(adminRolePlaceholder), role)
 }
 
-func registerSPA(app *fiber.App, assets fs.FS, index []byte, adminEnabled bool) {
-	if index == nil {
+func registerSPA(app *fiber.App, d Deps) {
+	if d.index == nil {
 		return
 	}
+	assets, index, adminEnabled := d.Assets, d.index, d.Cfg.AdminEnabled
 
 	shell := func(status int) fiber.Handler {
 		return func(c *fiber.Ctx) error {

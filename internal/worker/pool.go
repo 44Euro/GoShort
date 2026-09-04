@@ -59,9 +59,6 @@ func (p *Pool) Start() {
 	}
 }
 
-// log ของ worker ไม่มี request id เพราะ event ถูกรวมเป็น batch ข้าม request
-// ความสัมพันธ์หนึ่งต่อหนึ่งกับคำขอใดคำขอหนึ่งจึงไม่มีอยู่จริงตั้งแต่ต้น
-
 // Enqueue ต้องไม่บล็อกเด็ดขาด คนที่รออยู่คือคนกดลิงก์ ไม่ใช่ระบบหลังบ้าน
 // คิวเต็มแล้วยอมทิ้ง event ดีกว่าปล่อยให้ back-pressure วิ่งย้อนไปหาผู้ใช้
 func (p *Pool) Enqueue(e Event) bool {
@@ -126,6 +123,8 @@ func (p *Pool) run() {
 	}
 }
 
+// log ตรงนี้ไม่มี request id เพราะ batch หนึ่งกินของจากหลายคำขอ ความสัมพันธ์
+// หนึ่งต่อหนึ่งกับคำขอใดคำขอหนึ่งไม่มีอยู่จริงตั้งแต่ต้น
 func (p *Pool) flush(buf []Event) []Event {
 	if len(buf) == 0 {
 		return buf

@@ -61,7 +61,7 @@ func New(d Deps) *fiber.App {
 	registerStats(app, d)
 
 	if d.Assets != nil {
-		registerSPA(app, d.Assets, d.index, d.Cfg.AdminEnabled)
+		registerSPA(app, d)
 	}
 
 	// ต้องอยู่ท้ายสุด

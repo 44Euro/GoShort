@@ -64,7 +64,7 @@ image, so the split is visible without running anything.
 |---|---|---|
 | `POST /api/admin/login` | `404` — not in the router | `200` |
 | `GET /login`, `/admin` | `404` — falls through to `/:code` | the console |
-| admin JS | the 20 kB console chunk is never fetched | fetched on demand, after the first paint |
+| admin JS | the console chunk is never fetched | fetched on demand, after the first paint |
 | `GET /api/admin/me` on page load | not sent | sent |
 | `/`, `/s/:code`, `/:code`, `/health`, `/metrics` | unchanged | unchanged |
 
@@ -72,7 +72,7 @@ A test asserts the 404, not the README: a `401` there would mean the route is st
 
 The admin console is code-split out of the first bundle, and the public page skips the
 `/api/admin/me` session probe entirely. **Neither is a security boundary** — the chunk is still
-served from `/assets` and can be fetched directly. The boundary is the server returning 404.
+served as a static asset and can be fetched directly. The boundary is the server returning 404.
 
 The SPA learns which role it is talking to from a placeholder the server substitutes into the HTML
 shell once at boot. Asking the API would cost a round trip on the page that most needs to be fast.
@@ -110,6 +110,13 @@ different: a cache miss has nothing to fall back to below it.
 
 Liveness deliberately touches nothing. A liveness probe that pings the database restarts healthy
 processes whenever the database is merely *slow*, which is the failure it exists to prevent.
+
+One consequence worth knowing before a demo: **the dashboard shows the process that served it.**
+Under compose the redirects land on `api` and the console runs on `admin`, so the gauges there stay
+flat. To watch p99 move as `GOSHORT_SYNC_MODE` flips, run the single-process form — `go run
+./cmd/api`, where both roles share one registry. `load-test/run.sh` already does this: it starts its
+own process on `:8099` against a separate Redis database, so the benchmark below is unaffected by
+any of this.
 
 ---
 
@@ -236,8 +243,8 @@ rather than counting anything twice.
 The redirect histogram uses hand-picked buckets from 0.5 ms upward. Prometheus' default buckets start
 at 5 ms, which would put every redirect in the first bucket and make p99 meaningless.
 
-Three limits worth stating: **p99 is estimated from bucket edges**, not exact; metrics **reset on
-restart**; and they are **per instance**, not cluster-wide.
+Two limits worth stating here: **p99 is estimated from bucket edges**, not exact, and metrics
+**reset on restart**. They are also per instance — see *Running more than one instance*.
 
 `/api/stats/public` exposes hit rate, p99 and dropped counts without authentication. That is a
 deliberate choice for a portfolio project — the landing page's numbers are meant to be checkable — and

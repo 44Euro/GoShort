@@ -59,6 +59,7 @@ services:
       JWT_SECRET: "dev-secret-change-me"
       ADMIN_EMAIL: "admin@goshort.dev"
       ADMIN_PASSWORD: "goshort-demo"
+      GOSHORT_SYNC_MODE: "${GOSHORT_SYNC_MODE:-0}"
     depends_on:
       postgres:
         condition: service_healthy

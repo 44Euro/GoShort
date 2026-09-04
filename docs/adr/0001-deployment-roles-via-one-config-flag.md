@@ -3,14 +3,14 @@
 `ADMIN_ENABLED` decides whether a process registers the admin console at all. On a public
 instance the admin routes are never added to the router, so `/api/admin/login` answers `404` —
 the path does not exist there, rather than existing and being guarded. Both roles ship in the
-same binary and the same image; `docker-compose.yml` runs one of each.
+same binary and the same image; compose runs one of each.
 
 ## Considered options
 
-**Two binaries sharing `internal/`.** Produces exactly the behaviour the flag produces, but costs
-changes to the Dockerfile, compose, CI, the e2e base URL, and the architecture diagram — and
-invites the fair question of whether two services against one database are a distributed monolith.
-Nothing about the running system would differ.
+**Two binaries sharing the same internal packages.** Produces exactly the behaviour the flag
+produces, but costs changes to the image build, compose, CI, the end-to-end base URL and the
+architecture diagram — and invites the fair question of whether two services against one database
+are a distributed monolith. Nothing about the running system would differ.
 
 **The admin console on a separate static host** (Vercel or similar), calling the API cross-origin.
 Rejected on cookie mechanics, which are worth stating precisely because the failure is not obvious:
@@ -23,9 +23,9 @@ Rejected on cookie mechanics, which are worth stating precisely because the fail
 
 Making it work means `SameSite=None; Secure`, which hands back the CSRF surface that `Lax` was
 closing for free, which then needs a CSRF token implemented by hand. More code, for a weaker
-security posture than the one the project already has. The static host also cannot run the Go
-process at all: the worker pool, the in-memory Prometheus registry and `embed.FS` all need a
-long-lived process, so the API would have to be hosted elsewhere regardless.
+security posture than the one the project already has. A static host also cannot run the Go
+process at all: the worker pool and the in-memory metrics registry both need a long-lived process,
+so the API would have to be hosted elsewhere regardless.
 
 ## Consequences
 
@@ -33,7 +33,7 @@ The public role no longer serves `/login` or `/admin` as SPA paths either; they 
 the `/:code` wildcard and produce a genuine 404, which is the correct answer for that host.
 
 The admin console is code-split out of the initial JavaScript bundle. **That split is not a
-security boundary** — the chunk is still served from `/assets` and can be fetched directly. The
+security boundary** — the chunk is still served as a static asset and can be fetched directly. The
 boundary is the server returning 404. The split exists so the public page does not download code
 it cannot use.
 

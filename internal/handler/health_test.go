@@ -44,9 +44,6 @@ func TestReadinessReportsEveryDependency(t *testing.T) {
 	require.Equal(t, "up", body.Redis)
 }
 
-// แก่นของ ticket นี้: cache ล่มแล้ว redirect ยัง fallback ไป Postgres ได้และ
-// rate limiter ก็ fail-open อยู่แล้ว instance นี้ยังเสิร์ฟถูกต้อง แค่ช้าลง
-// ถอดมันออกจาก rotation ตอน Redis กระตุกคือการล้าง pool ทิ้งทั้งชุดพร้อมกัน
 func TestReadinessStaysGreenWhenOnlyTheCacheIsDown(t *testing.T) {
 	e := newEnv(t)
 	require.NoError(t, e.rdb.Close())

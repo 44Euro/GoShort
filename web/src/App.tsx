@@ -25,9 +25,9 @@ export function App() {
           <Route
             path="/login"
             element={
-              <Deferred>
+              <Suspense fallback={<BootBlank />}>
                 <Login />
-              </Deferred>
+              </Suspense>
             }
           />
         )}
@@ -35,9 +35,9 @@ export function App() {
           <Route
             path="/admin/*"
             element={
-              <Deferred>
+              <Suspense fallback={<BootBlank />}>
                 <AdminSection />
-              </Deferred>
+              </Suspense>
             }
           />
         )}
@@ -47,8 +47,4 @@ export function App() {
       </Routes>
     </SessionProvider>
   );
-}
-
-function Deferred({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<BootBlank />}>{children}</Suspense>;
 }
