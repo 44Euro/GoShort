@@ -20,3 +20,7 @@ e2e/playwright-report/
 .DS_Store
 web/*.tsbuildinfo
 e2e/mobile/
+e2e/manual/
+.agents/
+skills-lock.json
+GoShort.html
