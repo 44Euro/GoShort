@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
-import { api, type Overview, type Summary } from "../api";
-import { DailyBars, Empty, ReferrerBars } from "../components/Charts";
+import { api, type Summary } from "../api";
 import { usePoll } from "../usePoll";
 
 const QUEUE_TICKS = 28;
 
 export function Dashboard() {
-  // เกจสดกับภาพรวมหนักรีเฟรชคนละจังหวะ ไม่งั้นการ poll ทุก 2 วิจะลาก GROUP BY ไปด้วย
+  // เกจสดอย่างเดียว ภาพรวมที่เปิด GROUP BY ย้ายไปหน้า /admin/analytics แล้ว
+  // ไม่งั้นการ poll ทุก 2 วิจะลากคิวรีหนักไปด้วยทุกครั้ง
   const live = usePoll<Summary>(() => api.get<Summary>("/api/admin/dashboard/summary"), 2000);
-  const over = usePoll<Overview>(() => api.get<Overview>("/api/admin/dashboard/overview"), 30000);
 
   const s = live.data;
   const baseline = useRef<number | null>(null);
@@ -28,21 +26,19 @@ export function Dashboard() {
 
   return (
     <div className="rise">
-      <div style={{ padding: "40px 40px 26px", display: "flex", justifyContent: "space-between", gap: 30, flexWrap: "wrap" }}>
+      <div style={{ padding: "40px 40px 26px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 30, flexWrap: "wrap" }}>
         <div style={{ maxWidth: 640 }}>
           <div className="label-mono" style={{ letterSpacing: "0.22em", marginBottom: 10 }}>
             Live instrumentation
           </div>
-          <h1 style={{ fontSize: 46, fontWeight: 400, margin: "0 0 14px", letterSpacing: "-0.025em" }}>
-            The redirect path, under observation
-          </h1>
-          <p className="dim" style={{ margin: 0, fontSize: 14.5, lineHeight: 1.7 }}>
+          <h1 style={{ margin: "0 0 14px" }}>The redirect path, under observation</h1>
+          <p className="dim" style={{ margin: 0, fontSize: 14.5, lineHeight: 1.75 }}>
             Every figure below is read from the running process: cache-aside hits against Redis, the depth of
             the buffered channel feeding the click-writer pool, and the tail latency of{" "}
             <span className="mono">GET /:code</span>.
           </p>
         </div>
-        <div className="mono muted" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        <div className="mono muted" style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           <span className="pulse-dot" />
           <span>{live.error ? "API unreachable" : live.loading ? "connecting" : "live · 2s"}</span>
         </div>
@@ -97,52 +93,44 @@ export function Dashboard() {
 
       <div className="panel">
         <div className="panel-head">
-          <h2>Clicks, last fourteen days</h2>
-          <span className="mono muted" style={{ fontSize: 11 }}>batched insert · 2s flush</span>
+          <h2>The write path</h2>
+          <span className="mono muted" style={{ fontSize: 11 }}>GET /api/admin/dashboard/summary</span>
         </div>
-        {over.loading ? <Empty label="loading" /> : <DailyBars points={over.data?.series ?? []} />}
-      </div>
-
-      <div className="two-col">
-        <div>
-          <h2 style={{ fontSize: 25, margin: "0 0 8px" }}>Top five links</h2>
-          <div className="section-rule" style={{ borderBottom: "1px solid var(--color-text)", paddingBottom: 8, marginBottom: 4 }} />
-          {(over.data?.top_links ?? []).length === 0 ? (
-            <Empty label="no links yet" />
-          ) : (
-            over.data!.top_links.map((l) => (
-              <Link
-                key={l.code}
-                to={`/admin/links/${encodeURIComponent(l.code)}`}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "22px 1fr auto",
-                  gap: 12,
-                  alignItems: "baseline",
-                  padding: "11px 0",
-                  borderBottom: "1px solid var(--color-divider)",
-                  textDecoration: "none",
-                  color: "inherit",
-                }}
-              >
-                <span className="mono muted" style={{ fontSize: 11 }}>{l.rank}</span>
-                <span className="mono" style={{ fontSize: 13, color: "var(--color-accent-700)" }}>/{l.code}</span>
-                <span style={{ fontFamily: "var(--font-heading)", fontSize: 17, fontFeatureSettings: "'tnum'" }}>
-                  {l.clicks.toLocaleString()}
-                </span>
-              </Link>
-            ))
-          )}
-        </div>
-
-        <div>
-          <h2 style={{ fontSize: 25, margin: "0 0 8px" }}>Top referrers</h2>
-          <div className="section-rule" style={{ borderBottom: "1px solid var(--color-text)", paddingBottom: 8, marginBottom: 4 }} />
-          <ReferrerBars items={over.data?.referrers ?? []} />
-          <p className="dim" style={{ fontSize: 13, lineHeight: 1.65, marginTop: 18 }}>
-            Referrers are read from the batched <span className="mono">click_events</span> table. Source IPs are
-            SHA-256 hashed before insert and are never stored in the clear.
-          </p>
+        <div className="write-path">
+          <div>
+            <p className="dim" style={{ fontSize: 14, lineHeight: 1.75 }}>
+              The redirect answers with a 302 before anything is written. The click event is pushed onto a
+              buffered channel with a <span className="mono">select</span> and a{" "}
+              <span className="mono">default</span> arm, so a full channel drops the event and logs it rather
+              than making the person being redirected wait on Postgres.
+            </p>
+            <p className="dim" style={{ fontSize: 14, lineHeight: 1.75, margin: 0 }}>
+              Eight workers drain that channel, accumulate up to fifty events, and write them in a single{" "}
+              <span className="mono">CreateInBatches</span>. Click counts move by{" "}
+              <span className="mono">click_count = click_count + ?</span> so concurrent workers touching one
+              link cannot lose an increment.
+            </p>
+          </div>
+          <div>
+            <div className="figure-row">
+              <span>Events written</span>
+              <b className="num">{(s?.written_events ?? 0).toLocaleString()}</b>
+            </div>
+            <div className="figure-row">
+              <span>Events dropped</span>
+              <b className="num">{(s?.dropped_events ?? 0).toLocaleString()}</b>
+            </div>
+            <div className="figure-row">
+              <span>Queue depth</span>
+              <b className="num">
+                {s ? `${s.queue_depth} / ${s.queue_capacity}` : "—"}
+              </b>
+            </div>
+            <div className="figure-row">
+              <span>Clicks recorded</span>
+              <b className="num">{(s?.total_clicks ?? 0).toLocaleString()}</b>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ import (
 func TestApplicationPathsAreServedBySPANotByTheRedirectHandler(t *testing.T) {
 	e := newEnvWithAssets(t)
 
-	for _, path := range []string{"/", "/login", "/s", "/admin", "/admin/links", "/admin/links/gopher"} {
+	for _, path := range []string{"/", "/login", "/s", "/admin", "/admin/analytics", "/admin/links", "/admin/links/gopher"} {
 		res, err := e.app.Test(httptest.NewRequest(http.MethodGet, path, nil))
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, res.StatusCode, "%s should serve the SPA shell", path)

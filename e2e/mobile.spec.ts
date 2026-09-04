@@ -9,8 +9,9 @@ const screens = [
 
 const adminScreens = [
   { path: "/admin", name: "05-dashboard" },
-  { path: "/admin/links", name: "06-links" },
-  { path: "/admin/links/demo1", name: "07-analytics" },
+  { path: "/admin/analytics", name: "06-overview" },
+  { path: "/admin/links", name: "07-links" },
+  { path: "/admin/links/demo1", name: "08-analytics" },
 ];
 
 test("every screen is usable at 360px", async ({ page }) => {
