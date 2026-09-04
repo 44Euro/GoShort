@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { BootBlank } from "../components/BootBlank";
 import { useSession } from "../session";
 
 export function Login() {
@@ -116,6 +117,3 @@ export function Login() {
   );
 }
 
-export function BootBlank() {
-  return <div style={{ minHeight: "100vh" }} aria-busy="true" />;
-}

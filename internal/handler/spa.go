@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -18,9 +19,24 @@ var adminSPARoutes = []string{
 	"/login", "/admin", "/admin/analytics", "/admin/links", "/admin/links/:code",
 }
 
-func registerSPA(app *fiber.App, assets fs.FS, adminEnabled bool) {
+const adminRolePlaceholder = "__GOSHORT_ADMIN__"
+
+// SPA ต้องรู้บทบาทของ instance ตั้งแต่ไบต์แรกที่ได้รับ ไม่งั้นต้องยิง API ถามบนหน้า
+// ที่ต้องเร็วที่สุด แทนที่ทีเดียวตอน boot ต้นทุนต่อ request จึงเป็นศูนย์
+func spaShell(assets fs.FS, adminEnabled bool) []byte {
 	index, err := fs.ReadFile(assets, "index.html")
 	if err != nil {
+		return nil
+	}
+	role := []byte("0")
+	if adminEnabled {
+		role = []byte("1")
+	}
+	return bytes.ReplaceAll(index, []byte(adminRolePlaceholder), role)
+}
+
+func registerSPA(app *fiber.App, assets fs.FS, index []byte, adminEnabled bool) {
+	if index == nil {
 		return
 	}
 

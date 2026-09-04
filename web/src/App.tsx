@@ -1,15 +1,17 @@
-import { Navigate, Outlet, Route, Routes, useNavigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import { Route, Routes } from "react-router-dom";
 
-import { AdminNav } from "./components/Nav";
-import { Analytics } from "./pages/Analytics";
-import { Dashboard } from "./pages/Dashboard";
-import { Links } from "./pages/Links";
-import { BootBlank, Login } from "./pages/Login";
+import { BootBlank } from "./components/BootBlank";
 import { NotFound } from "./pages/NotFound";
-import { Overview } from "./pages/Overview";
 import { PublicStats } from "./pages/PublicStats";
 import { Shorten } from "./pages/Shorten";
-import { SessionProvider, useSession } from "./session";
+import { adminEnabled } from "./role";
+import { SessionProvider } from "./session";
+
+// หน้าสาธารณะไม่ควรดาวน์โหลดโค้ดของหน้าผู้ดูแลติดไปด้วย — นี่เป็นเรื่องขนาด payload
+// ไม่ใช่ขอบเขตความปลอดภัย ขอบเขตจริงคือ route ฝั่งเซิร์ฟเวอร์ที่ตอบ 404
+const AdminSection = lazy(() => import("./AdminSection"));
+const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
 
 export function App() {
   return (
@@ -18,14 +20,27 @@ export function App() {
         <Route path="/" element={<Shorten />} />
         <Route path="/s" element={<PublicStats />} />
         <Route path="/s/:code" element={<PublicStats />} />
-        <Route path="/login" element={<Login />} />
 
-        <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<Dashboard />} />
-          <Route path="/admin/analytics" element={<Overview />} />
-          <Route path="/admin/links" element={<Links />} />
-          <Route path="/admin/links/:code" element={<Analytics />} />
-        </Route>
+        {adminEnabled && (
+          <Route
+            path="/login"
+            element={
+              <Deferred>
+                <Login />
+              </Deferred>
+            }
+          />
+        )}
+        {adminEnabled && (
+          <Route
+            path="/admin/*"
+            element={
+              <Deferred>
+                <AdminSection />
+              </Deferred>
+            }
+          />
+        )}
 
         {/* /:code ที่ไม่มีจริงถูกเสิร์ฟจาก Go พร้อม status 404 แล้วมาลงที่นี่ */}
         <Route path="*" element={<NotFound />} />
@@ -34,28 +49,6 @@ export function App() {
   );
 }
 
-function AdminLayout() {
-  const { email, checking, signOut } = useSession();
-  const nav = useNavigate();
-
-  // ระหว่างถามเซิร์ฟเวอร์ว่ายัง login อยู่ไหม ต้องไม่กระพริบหน้า login ให้เห็นก่อน
-  if (checking) return <BootBlank />;
-  if (!email) return <Navigate to="/login" replace />;
-
-  return (
-    <>
-      <AdminNav
-        email={email}
-        onSignOut={async () => {
-          // session ที่หมดอายุไปแล้วทำให้ logout ล้มได้ แต่ผู้ใช้ก็ยังต้องออกจากระบบ
-          try {
-            await signOut();
-          } finally {
-            nav("/", { replace: true });
-          }
-        }}
-      />
-      <Outlet />
-    </>
-  );
+function Deferred({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<BootBlank />}>{children}</Suspense>;
 }

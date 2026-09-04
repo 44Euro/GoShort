@@ -1,5 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 
+import { adminEnabled } from "../role";
+
 export function Brand({ to = "/" }: { to?: string }) {
   return (
     <Link to={to} className="nav-brand" style={{ textDecoration: "none", color: "inherit" }}>
@@ -14,7 +16,7 @@ export function PublicNav() {
       <Brand />
       <span className="nav-spacer" />
       <Link to="/s">Look up a code</Link>
-      <Link to="/login">Administration</Link>
+      {adminEnabled && <Link to="/login">Administration</Link>}
     </div>
   );
 }

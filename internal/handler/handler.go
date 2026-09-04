@@ -38,7 +38,7 @@ func New(d Deps) *fiber.App {
 	d.admins = repository.NewAdminRepo(d.DB)
 	d.cache = cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
 	if d.Assets != nil {
-		d.index, _ = fs.ReadFile(d.Assets, "index.html")
+		d.index = spaShell(d.Assets, d.Cfg.AdminEnabled)
 	}
 
 	fc := fiber.Config{
@@ -58,7 +58,7 @@ func New(d Deps) *fiber.App {
 	registerStats(app, d)
 
 	if d.Assets != nil {
-		registerSPA(app, d.Assets, d.Cfg.AdminEnabled)
+		registerSPA(app, d.Assets, d.index, d.Cfg.AdminEnabled)
 	}
 
 	// ต้องอยู่ท้ายสุด

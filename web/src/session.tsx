@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { api } from "./api";
+import { adminEnabled } from "./role";
 
 type Session = {
   email: string | null;
@@ -15,9 +16,12 @@ const Ctx = createContext<Session | null>(null);
 // ตอน boot แล้วจัดการ 401 แบบตั้งรับ แทนการเช็ควันหมดอายุล่วงหน้า
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [email, setEmail] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
+  // instance ที่ไม่มีบทบาท admin ไม่มี session ให้ถาม อย่าเสีย request ทิ้งทุกครั้งที่โหลดหน้า
+  const [checking, setChecking] = useState(adminEnabled);
 
   useEffect(() => {
+    if (!adminEnabled) return;
+
     let alive = true;
     api
       .get<{ email: string }>("/api/admin/me")

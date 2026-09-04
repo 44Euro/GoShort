@@ -70,3 +70,28 @@ func TestThePublicSurfaceIsUntouchedByTheRoleFlag(t *testing.T) {
 			"%s must still work on a public instance", path)
 	}
 }
+
+// SPA อ่านบทบาทจาก shell ที่ได้รับ ไม่ใช่จากการยิง API ถาม — สัญญานี้อยู่ฝั่ง
+// เซิร์ฟเวอร์จึงทดสอบได้ ต่างจากเนื้อ bundle ที่เปราะเกินกว่าจะ assert
+func TestTheShellTellsTheSPAWhichRoleItIsTalkingTo(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		tweaks []func(*config.Config)
+		want   string
+	}{
+		{"admin role", nil, `content="1"`},
+		{"public role", []func(*config.Config){publicRole}, `content="0"`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newEnvWithAssets(t, tc.tweaks...)
+
+			res, err := e.app.Test(httptest.NewRequest(http.MethodGet, "/", nil))
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, res.StatusCode)
+
+			body := readBody(t, res)
+			require.Contains(t, body, tc.want)
+			require.NotContains(t, body, "__GOSHORT_ADMIN__", "the placeholder must never reach a browser")
+		})
+	}
+}
