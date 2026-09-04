@@ -50,7 +50,10 @@ func registerOps(app *fiber.App, d Deps) {
 	app.Get("/api/stats/public",
 		middleware.RateLimit(d.Redis, "public-stats", 120, time.Minute),
 		func(c *fiber.Ctx) error {
-			s := d.Metrics.Summary()
+			s, err := d.summaries.Summary(c.UserContext())
+			if err != nil {
+				return unreachableSource(c, err)
+			}
 			total, err := d.totalClicks(c)
 			if err != nil {
 				return err

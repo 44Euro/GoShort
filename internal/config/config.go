@@ -26,6 +26,10 @@ type Config struct {
 	// text สำหรับอ่านตอน dev, json สำหรับให้เครื่องดูด
 	LogFormat string
 
+	// ตัวเลขวัดผลเป็นของแต่ละโปรเซส คอนโซลที่อยู่คนละโปรเซสกับตัวที่รับ redirect
+	// จึงต้องอ่านของ instance ที่มันเฝ้า ไม่ใช่ของตัวเอง ไม่ตั้ง = อ่านของตัวเอง
+	MetricsSourceURL string
+
 	DBMaxOpenConns    int
 	DBMaxIdleConns    int
 	ClickBufferSize   int
@@ -62,6 +66,7 @@ func Load() (Config, error) {
 		AdminPassword:     env("ADMIN_PASSWORD", ""),
 		AdminEnabled:      envBool("ADMIN_ENABLED", true),
 		LogFormat:         env("LOG_FORMAT", "text"),
+		MetricsSourceURL:  env("METRICS_SOURCE_URL", ""),
 		DBMaxOpenConns:    envInt("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:    envInt("DB_MAX_IDLE_CONNS", 25),
 		ClickBufferSize:   envInt("CLICK_BUFFER_SIZE", 1000),

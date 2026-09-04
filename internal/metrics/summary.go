@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"context"
+
 	dto "github.com/prometheus/client_model/go"
 )
 
@@ -13,14 +15,25 @@ type Summary struct {
 	Written      int64   `json:"written_events"`
 }
 
+// Summarizer คืนตัวเลขของ instance ที่กำลังถูกเฝ้าอยู่ ซึ่งอาจเป็นโปรเซสนี้เองหรือ
+// อีกโปรเซสหนึ่ง — ผู้เรียกไม่ต้องรู้ว่าอันไหน
+type Summarizer interface {
+	Summary(ctx context.Context) (Summary, error)
+}
+
 // อ่านจาก registry เดียวกับที่ /metrics เสิร์ฟ ห้ามนับซ้ำอีกทางหนึ่ง
 // ไม่งั้นตัวเลขบนหน้าเว็บกับ /metrics จะไม่ตรงกันแล้วอธิบายไม่ได้ว่าอันไหนจริง
-func (m *Metrics) Summary() Summary {
+func (m *Metrics) Summary(context.Context) (Summary, error) {
 	families, err := m.reg.Gather()
 	if err != nil {
-		return Summary{}
+		return Summary{}, err
 	}
+	return SummaryFrom(families), nil
+}
 
+// สูตรคำนวณชุดเดียวของทั้งระบบ ไม่ว่าตระกูลตัวชี้วัดจะมาจาก registry ของโปรเซสนี้
+// หรือดึงข้ามมาจากอีกโปรเซส — มีสองสูตรเมื่อไหร่ก็อธิบายไม่ได้ว่าอันไหนจริง
+func SummaryFrom(families []*dto.MetricFamily) Summary {
 	var s Summary
 	var hits, misses float64
 

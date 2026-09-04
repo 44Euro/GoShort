@@ -125,7 +125,10 @@ func registerAdminAnalytics(g fiber.Router, d Deps) {
 	})
 
 	g.Get("/dashboard/summary", func(c *fiber.Ctx) error {
-		s := d.Metrics.Summary()
+		s, err := d.summaries.Summary(c.UserContext())
+		if err != nil {
+			return unreachableSource(c, err)
+		}
 		total, err := d.totalClicks(c)
 		if err != nil {
 			return err

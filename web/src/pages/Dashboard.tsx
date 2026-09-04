@@ -40,11 +40,11 @@ export function Dashboard() {
         </div>
         <div className="mono muted" style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase" }}>
           <span className="pulse-dot" />
-          <span>{live.error ? "API unreachable" : live.loading ? "connecting" : "live · 2s"}</span>
+          <span>{live.error ? live.error : live.loading ? "connecting" : "live · 2s"}</span>
         </div>
       </div>
 
-      <div className="instrument">
+      <div className={live.error ? "instrument is-stale" : "instrument"}>
         <span className="sweep" />
         <div className="instrument-grid">
           <div className="gauge">

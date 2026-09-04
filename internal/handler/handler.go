@@ -29,6 +29,8 @@ type Deps struct {
 	admins *repository.AdminRepo
 	cache  *cache.LinkCache
 	index  []byte
+
+	summaries metrics.Summarizer
 }
 
 // ลำดับการลงทะเบียนสำคัญ: Fiber match ตามลำดับ และ GET /:code เป็น wildcard
@@ -38,6 +40,13 @@ func New(d Deps) *fiber.App {
 	d.stats = repository.NewStatsRepo(d.DB)
 	d.admins = repository.NewAdminRepo(d.DB)
 	d.cache = cache.NewLinkCache(d.Redis, d.Cfg.CacheTTL)
+
+	// คอนโซลที่อยู่คนละโปรเซสกับตัวที่รับ redirect ต้องรายงานตัวเลขของตัวที่มันเฝ้า
+	// ไม่ใช่ของตัวเอง ไม่งั้นเกจจะนิ่งตลอดเพราะโปรเซสนี้ไม่เคยเห็น redirect เลย
+	d.summaries = d.Metrics
+	if d.Cfg.MetricsSourceURL != "" {
+		d.summaries = metrics.NewRemote(d.Cfg.MetricsSourceURL)
+	}
 	if d.Assets != nil {
 		d.index = spaShell(d.Assets, d.Cfg.AdminEnabled)
 	}
