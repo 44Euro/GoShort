@@ -70,6 +70,32 @@ image, so the split is visible without running anything.
 
 A test asserts the 404, not the README: a `401` there would mean the route is still mounted.
 
+```
+                    same image, one variable apart
+   ┌──────────────────────────────────┐   ┌──────────────────────────────────┐
+   │ api        ADMIN_ENABLED=0 :8080 │   │ admin      ADMIN_ENABLED=1 :8081 │
+   │                                  │   │                                  │
+   │  POST /api/links                 │   │  the console, /api/admin/*       │
+   │  GET  /:code            302      │   │  /login, /admin                  │
+   │  /health  /health/ready          │   │  /health  /health/ready          │
+   │  /metrics ◄──────────────────────┼───┼── gauges read the watched        │
+   │                                  │   │   instance, not this process     │
+   │  click queue   per process       │   │  click queue   idle here         │
+   │  metrics       per process       │   │  metrics       nothing to see    │
+   └────────────────┬─────────────────┘   └────────────────┬─────────────────┘
+                    │                                      │
+                    └──────────────────┬───────────────────┘
+                                       ▼
+                         PostgreSQL          Redis
+                         rows, click_count   cache, rate limits
+```
+
+Everything below the fold is shared; everything inside a box is that process's own. The console
+reads `/metrics` from the instance it watches because those figures live in that process — a
+console reporting on itself would report that nothing ever happens. In a real deployment this is
+Prometheus' job: it scrapes every instance and aggregates. The single hop here exists so the
+console can watch one instance without standing up a metrics stack, and it does not scale past one.
+
 The admin console is code-split out of the first bundle, and the public page skips the
 `/api/admin/me` session probe entirely. **Neither is a security boundary** — the chunk is still
 served as a static asset and can be fetched directly. The boundary is the server returning 404.
@@ -93,7 +119,7 @@ for a weaker posture.
 | rate limit counters | **yes** — Redis `INCR` per IP | the quota is global, not per replica |
 | `click_count` | **yes** — `UPDATE … SET click_count = click_count + n` | atomic in the database, never read-then-write in Go |
 | click queue | **no** — a Go channel per process | a drop is that process's drop, and `queue_depth` is that process's depth |
-| Prometheus metrics | **no** — an in-process registry | scrape every instance; the built-in dashboard is deliberately a single-instance view |
+| Prometheus metrics | **no** — an in-process registry | `METRICS_SOURCE_URL` points the console at the instance it watches; aggregating more than one is Prometheus' job |
 | schema migration | **serialised** — a Postgres advisory lock | see the last entry under *Bugs the tests found* |
 
 Health checks are split along the same line, because a load balancer acts on them:
@@ -111,12 +137,24 @@ different: a cache miss has nothing to fall back to below it.
 Liveness deliberately touches nothing. A liveness probe that pings the database restarts healthy
 processes whenever the database is merely *slow*, which is the failure it exists to prevent.
 
-One consequence worth knowing before a demo: **the dashboard shows the process that served it.**
-Under compose the redirects land on `api` and the console runs on `admin`, so the gauges there stay
-flat. To watch p99 move as `GOSHORT_SYNC_MODE` flips, run the single-process form — `go run
-./cmd/api`, where both roles share one registry. `load-test/run.sh` already does this: it starts its
-own process on `:8099` against a separate Redis database, so the benchmark below is unaffected by
-any of this.
+**Figures belong to a process, so the console has to be told which one to watch.** Under compose
+the redirects land on `api` and the console runs on `admin`; `METRICS_SOURCE_URL` points the latter
+at the former, and the same code that reads this process's registry computes the numbers either way
+— there is no second formula that could drift. Flip `GOSHORT_SYNC_MODE`, recreate, and the gauges
+move:
+
+| | p99 | cache hit rate |
+|---|---:|---:|
+| `GOSHORT_SYNC_MODE=1` | 2.49 ms | 0.0% |
+| `GOSHORT_SYNC_MODE=0` | 0.90 ms | 100.0% |
+
+Two hundred serial `curl`s each way — enough to see the difference move on screen, nowhere near a
+load test. The measured figures are in *Benchmark* below; `load-test/run.sh` starts its own process
+on `:8099` against a separate Redis database and is unaffected by any of this.
+
+When the watched instance cannot be reached the console answers `503` and says so, and the gauges
+grey out. It never reports zeroes: zero means "nothing happened", which is a different thing from
+"cannot see", and a monitoring screen that confuses the two is worse than no screen.
 
 ---
 

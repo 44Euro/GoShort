@@ -37,6 +37,11 @@ security boundary** — the chunk is still served as a static asset and can be f
 boundary is the server returning 404. The split exists so the public page does not download code
 it cannot use.
 
+Figures are per-process, so splitting the roles left the console reporting on a process that never
+serves a redirect. It is therefore told which instance to watch, and reads that instance's metrics
+page; the same function computes the summary whether the input came from this registry or another,
+so no second formula exists to drift. Aggregating across instances remains Prometheus' job.
+
 The SPA learns its role from a placeholder the server substitutes into the HTML shell once at
 boot, not from an API call. A request on the landing page to ask "am I an admin instance?" would
 cost a round trip on the page that most needs to be fast.
