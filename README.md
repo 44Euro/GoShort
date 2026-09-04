@@ -87,10 +87,17 @@ cp .env.example .env
 docker compose up
 ```
 
-Seed the administrator, then sign in at `/login`:
+That brings up **two roles from the same image**, differing only in `ADMIN_ENABLED`:
+
+| | | |
+|---|---|---|
+| `api` | http://localhost:8080 | the public shortener and every `/:code` redirect. `/api/admin/*` is **not registered** on this process — it answers `404`, not `401` |
+| `admin` | http://localhost:8081 | the console. Same binary, same image, one environment variable apart |
+
+Seed the administrator, then sign in at http://localhost:8081/login:
 
 ```bash
-docker compose run --rm --entrypoint /seed api
+docker compose run --rm --entrypoint /seed admin
 ```
 
 The entrypoint override matters: the image's `ENTRYPOINT` is `/api`, so passing `/seed` as a command
@@ -102,7 +109,7 @@ Demo account: `admin@goshort.dev` / `goshort-demo` (both from `.env`).
 
 ```bash
 docker compose up -d postgres redis
-go run ./cmd/api          # :8080
+go run ./cmd/api          # :8080, both roles in one process (ADMIN_ENABLED defaults on)
 cd web && npm run dev     # :5173, proxies /api to :8080 so cookies stay same-origin
 ```
 
