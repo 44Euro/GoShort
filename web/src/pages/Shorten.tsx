@@ -63,9 +63,6 @@ export function Shorten() {
       <PublicNav />
 
       <div className="shell">
-        <div className="eyebrow" style={{ marginBottom: 24 }}>
-          Go · Fiber · Redis · Postgres
-        </div>
         <h1 className="display">Short links that never make anyone wait.</h1>
 
         <div className="lede">
@@ -175,7 +172,7 @@ export function Shorten() {
           </div>
           <div className="stat">
             <div className="stat-value">
-              {s === null ? <>—<small> dropped</small></> : <>{s.dropped_events}<small> dropped</small></>}
+              {s === null ? <>—<small> dropped</small></> : <>{s.dropped_events.toLocaleString()}<small> dropped</small></>}
             </div>
             <span className="label-mono">Click events</span>
             <p>Eight workers drain a thousand-slot channel in batches of fifty, flushing every two seconds.</p>

@@ -109,9 +109,7 @@ function Lookup() {
         <div className="eyebrow" style={{ color: "var(--color-neutral-600)", marginBottom: 22 }}>
           Public statistics · no account required
         </div>
-        <h1 style={{ fontSize: 46, fontWeight: 400, letterSpacing: "-0.025em", margin: "0 0 34px" }}>
-          Look up a code
-        </h1>
+        <h1 style={{ margin: "0 0 34px" }}>Look up a code</h1>
         <form
           onSubmit={(e) => {
             e.preventDefault();

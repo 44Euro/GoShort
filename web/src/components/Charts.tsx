@@ -118,7 +118,7 @@ export function ReferrerBars({ items }: { items: Referrer[] }) {
               }}
             />
           </span>
-          <span className="mono muted" style={{ fontSize: 11, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+          <span className="mono muted" style={{ fontSize: 11, textAlign: "right" }}>
             {r.percent.toFixed(1)}%
           </span>
         </div>

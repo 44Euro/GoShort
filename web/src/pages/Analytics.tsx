@@ -83,7 +83,7 @@ export function Analytics() {
 
       <div className="page-head" style={{ paddingTop: 18 }}>
         <div style={{ minWidth: 0 }}>
-          <h1 className="mono" style={{ fontSize: 40, fontWeight: 500, color: "var(--color-accent-700)" }}>
+          <h1 className="mono" style={{ fontSize: 36, fontWeight: 500, letterSpacing: "-0.035em", color: "var(--color-accent-700)" }}>
             /{data.code}
           </h1>
           <div className="mono muted" style={{ fontSize: 13, wordBreak: "break-all", marginTop: 8 }}>
@@ -122,7 +122,7 @@ export function Analytics() {
         </div>
         <div className="tile">
           <div className="tile-label">Cache state</div>
-          <div className="tile-value" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 28 }}>
+          <div className="tile-value is-word" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {data.cache.warm && <span className="pulse-dot" />}
             {data.cache.warm ? "Warm" : "Cold"}
           </div>
@@ -142,14 +142,14 @@ export function Analytics() {
 
       <div className="two-col">
         <div>
-          <h2 style={{ fontSize: 25, margin: "0 0 8px" }}>Referrers</h2>
-          <div className="section-rule" style={{ paddingBottom: 8, marginBottom: 4 }} />
+          <h2 style={{ margin: "0 0 8px" }}>Referrers</h2>
+          <div className="section-rule" style={{ marginBottom: 4 }} />
           <ReferrerBars items={data.referrers} />
         </div>
 
         <div>
-          <h2 style={{ fontSize: 25, margin: "0 0 8px" }}>Recent events</h2>
-          <div className="section-rule" style={{ paddingBottom: 8, marginBottom: 4 }} />
+          <h2 style={{ margin: "0 0 8px" }}>Recent events</h2>
+          <div className="section-rule" style={{ marginBottom: 4 }} />
           {data.events.length === 0 ? (
             <Empty label="no clicks recorded yet" />
           ) : (
