@@ -49,5 +49,8 @@ func Migrate(db *gorm.DB) error {
 }
 
 func Truncate(db *gorm.DB) error {
-	return db.Exec("TRUNCATE click_events, links, admin_users RESTART IDENTITY CASCADE").Error
+	// ไม่ใส่ RESTART IDENTITY: ถ้ารีเซ็ต sequence แล้ว id จะถูกใช้ซ้ำ ซึ่งอันตราย
+	// เมื่อ test ชี้มาที่ database เดียวกับแอปที่กำลังรันอยู่ — entry ที่ค้างใน Redis
+	// ยังถือ id เดิม แล้วคลิกจะไปลงผิดลิงก์เงียบ ๆ ไม่มี test ไหนพึ่ง id ที่เจาะจง
+	return db.Exec("TRUNCATE click_events, links, admin_users CASCADE").Error
 }
