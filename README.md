@@ -237,7 +237,7 @@ TEST_DATABASE_URL="postgres://goshort:goshort@localhost:5432/goshort?sslmode=dis
   go test -race -cover ./...
 ```
 
-Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are three seams:
+Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are four seams:
 
 - **The Fiber app**, driven through `app.Test` against a real Postgres and `miniredis` — every route,
   the JWT guard, rate limiting, cache behaviour, route ordering, and a 300-goroutine concurrency test
@@ -245,6 +245,9 @@ Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are t
 - **The worker pool**, driven through `Enqueue` / `Start` / `Shutdown` with an injected store and an
   injected tick source, so batching, timer flushes, back-pressure drops and shutdown draining are
   tested without sleeping in assertions.
+- **`model.Migrate`**, called directly against a real Postgres. It exists because migration runs
+  before the Fiber app is built, so it cannot be reached through the first seam; it proves only that
+  instances booting together do not collide.
 - **Playwright**, one happy path across the assembled stack.
 
 ---
@@ -284,8 +287,9 @@ to a connection, and the unlock can be handed a different connection from the po
 
 ## Metrics
 
-`/metrics` serves Prometheus text; the dashboard reads the same registry through `prometheus.Gatherer`
-rather than counting anything twice.
+`/metrics` serves Prometheus text. Nothing is counted twice: one function turns metric families into
+the figures on screen, and it is fed either by this process's `prometheus.Gatherer` or by the
+metrics page of the instance being watched — see *Deployment roles*. Two sources, one formula.
 
 The redirect histogram uses hand-picked buckets from 0.5 ms upward. Prometheus' default buckets start
 at 5 ms, which would put every redirect in the first bucket and make p99 meaningless.
