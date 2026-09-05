@@ -10,9 +10,11 @@ type SortKey = "code" | "clicks" | "created_at";
 const PAGE_SIZE = 8;
 
 export function Links() {
+  // ยอดคลิกอ่านสดทุกรอบ ส่วนเส้นกราฟ 14 วันฝั่งเซิร์ฟเวอร์ cache ไว้ การ poll ถี่
+  // จึงไม่ลาก GROUP BY ไปด้วย — คลิกจะโผล่ช้าสุดราวจังหวะนี้บวกอีก 2 วิที่ worker flush
   const { data, error, loading, reload } = usePoll<{ links: AdminLink[] }>(
     () => api.get<{ links: AdminLink[] }>("/api/admin/links"),
-    0,
+    5000,
   );
 
   const [query, setQuery] = useState("");
