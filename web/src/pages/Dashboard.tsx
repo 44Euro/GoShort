@@ -23,6 +23,9 @@ export function Dashboard() {
   const sinceLoad = s && baseline.current !== null ? s.total_clicks - baseline.current : 0;
   const queueFilled = s ? Math.round((s.queue_depth / Math.max(1, s.queue_capacity)) * QUEUE_TICKS) : 0;
   const num = (v: number | undefined, digits = 1) => (v === undefined ? "—" : v.toFixed(digits));
+  // ศูนย์แปลว่า "ไม่มีอะไรเกิดขึ้น" ซึ่งคนละเรื่องกับ "ยังอ่านค่าไม่ได้"
+  const count = (v: number | undefined) => (v === undefined ? "—" : v.toLocaleString());
+  const blind = live.error !== null;
 
   return (
     <div className="rise">
@@ -44,7 +47,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className={live.error ? "instrument is-stale" : "instrument"}>
+      <div className={blind ? "instrument is-stale" : "instrument"}>
         <span className="sweep" />
         <div className="instrument-grid">
           <div className="gauge">
@@ -75,14 +78,14 @@ export function Dashboard() {
             <div className="gauge-foot">
               8 workers &nbsp;·&nbsp; batch 50 &nbsp;·&nbsp;{" "}
               <span style={{ color: s && s.dropped_events > 0 ? "var(--color-ink-accent)" : undefined }}>
-                {s?.dropped_events ?? 0} dropped
+                {count(s?.dropped_events)} dropped
               </span>
             </div>
           </div>
 
           <div className="gauge">
             <div className="gauge-label">Total clicks</div>
-            <div className="gauge-value"><b>{(s?.total_clicks ?? 0).toLocaleString()}</b></div>
+            <div className="gauge-value"><b>{count(s?.total_clicks)}</b></div>
             <div style={{ height: 3, marginTop: 18 }} />
             <div className="gauge-foot">
               <span style={{ color: "var(--color-ink-accent)" }}>+{sinceLoad}</span> since this page loaded
@@ -91,7 +94,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="panel">
+      <div className={blind ? "panel is-stale" : "panel"}>
         <div className="panel-head">
           <h2>The write path</h2>
           <span className="mono muted" style={{ fontSize: 11 }}>GET /api/admin/dashboard/summary</span>
@@ -114,11 +117,11 @@ export function Dashboard() {
           <div>
             <div className="figure-row">
               <span>Events written</span>
-              <b className="num">{(s?.written_events ?? 0).toLocaleString()}</b>
+              <b className="num">{count(s?.written_events)}</b>
             </div>
             <div className="figure-row">
               <span>Events dropped</span>
-              <b className="num">{(s?.dropped_events ?? 0).toLocaleString()}</b>
+              <b className="num">{count(s?.dropped_events)}</b>
             </div>
             <div className="figure-row">
               <span>Queue depth</span>
@@ -128,7 +131,7 @@ export function Dashboard() {
             </div>
             <div className="figure-row">
               <span>Clicks recorded</span>
-              <b className="num">{(s?.total_clicks ?? 0).toLocaleString()}</b>
+              <b className="num">{count(s?.total_clicks)}</b>
             </div>
           </div>
         </div>

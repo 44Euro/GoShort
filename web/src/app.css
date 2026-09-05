@@ -436,8 +436,8 @@ th.sortable:hover { color: var(--color-accent); }
 }
 .instrument-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 
-/* ตัวเลขที่ค้างจากรอบก่อนต้องไม่อ่านเหมือนตัวเลขสด ไม่งั้น "มองไม่เห็น" จะถูกอ่านเป็น "นิ่ง" */
-.instrument.is-stale { opacity: 0.4; }
+/* ค่าที่ค้างจากรอบก่อนต้องไม่อ่านเหมือนค่าสด */
+.is-stale { opacity: 0.4; }
 .gauge {
   padding: 30px 30px 26px;
   border-right: 1px solid var(--color-ink-rule);
