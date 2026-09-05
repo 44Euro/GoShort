@@ -239,6 +239,10 @@ TEST_DATABASE_URL="postgres://goshort:goshort@localhost:5432/goshort?sslmode=dis
   go test -race -cover ./...
 ```
 
+> **The tests truncate whatever database you point them at.** `TEST_DATABASE_URL` above is the
+> same database `docker compose` uses, so running the suite empties the links you were looking at.
+> Stop the app first, or point the tests at a database of their own.
+
 Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are four seams:
 
 - **The Fiber app**, driven through `app.Test` against a real Postgres and `miniredis` — every route,

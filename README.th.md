@@ -234,6 +234,10 @@ TEST_DATABASE_URL="postgres://goshort:goshort@localhost:5432/goshort?sslmode=dis
   go test -race -cover ./...
 ```
 
+> **test สั่ง truncate ฐานข้อมูลที่คุณชี้ไปให้เสมอ** — `TEST_DATABASE_URL` ข้างบนคือฐานข้อมูล
+> ตัวเดียวกับที่ `docker compose` ใช้ การรัน test จึงล้างลิงก์ที่คุณกำลังดูอยู่ทิ้ง
+> ปิดแอปก่อน หรือชี้ test ไปที่ฐานข้อมูลของมันเอง
+
 integration test จะข้ามตัวเองถ้าไม่ได้ตั้ง `TEST_DATABASE_URL` มี seam อยู่สี่จุด:
 
 - **Fiber app** ขับผ่าน `app.Test` กับ Postgres จริงและ `miniredis` — ครอบทุก route, JWT guard,
