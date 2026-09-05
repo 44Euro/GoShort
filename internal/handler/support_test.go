@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,6 +27,14 @@ import (
 	"goshort/web"
 )
 
+// เทสต์อยู่ในสคีมาของตัวเอง ไม่ใช่ public — TEST_DATABASE_URL ชี้ไปที่ database
+// เดียวกับที่แอปรันอยู่ได้โดยไม่ล้างลิงก์ที่กำลังดูอยู่ทิ้ง ห้ามใส่ public ต่อท้าย
+// search_path เด็ดขาด ไม่งั้น AutoMigrate จะเจอตารางใน public แล้วไม่สร้างของตัวเอง
+// ทำให้เทสต์กลับไปเขียนทับข้อมูลจริงเงียบ ๆ
+const testSchema = "goshort_test"
+
+var schemaOnce sync.Once
+
 // integration test ต้องมี postgres จริง ถ้าไม่ตั้ง env ก็ข้ามไปแทนที่จะ fail
 // (CI ตั้งให้ผ่าน service container, local ตั้งเองผ่าน docker-compose)
 func testDB(t *testing.T) *gorm.DB {
@@ -33,7 +43,9 @@ func testDB(t *testing.T) *gorm.DB {
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set")
 	}
-	db, err := repository.Open(dsn, repository.PoolConfig{
+	ensureTestSchema(t, dsn)
+
+	db, err := repository.Open(scopedToTestSchema(dsn), repository.PoolConfig{
 		MaxOpen: 10, MaxIdle: 10, MaxLifetime: time.Minute, MaxIdleTime: time.Minute, Quiet: true,
 	})
 	require.NoError(t, err)
@@ -48,6 +60,36 @@ func testDB(t *testing.T) *gorm.DB {
 	require.NoError(t, model.Migrate(db))
 	require.NoError(t, model.Truncate(db))
 	return db
+}
+
+// สคีมาต้องมีอยู่ก่อนถึงจะต่อเข้าไปด้วย search_path ได้ ทำครั้งเดียวต่อการรันหนึ่งชุด
+func ensureTestSchema(t *testing.T, dsn string) {
+	t.Helper()
+	var err error
+	schemaOnce.Do(func() {
+		var db *gorm.DB
+		db, err = repository.Open(dsn, repository.PoolConfig{
+			MaxOpen: 1, MaxIdle: 1, MaxLifetime: time.Minute, MaxIdleTime: time.Minute, Quiet: true,
+		})
+		if err != nil {
+			return
+		}
+		defer func() {
+			if sqlDB, e := db.DB(); e == nil {
+				_ = sqlDB.Close()
+			}
+		}()
+		err = db.Exec("CREATE SCHEMA IF NOT EXISTS " + testSchema).Error
+	})
+	require.NoError(t, err)
+}
+
+func scopedToTestSchema(dsn string) string {
+	sep := "?"
+	if strings.Contains(dsn, "?") {
+		sep = "&"
+	}
+	return dsn + sep + "search_path=" + testSchema
 }
 
 func testRedis(t *testing.T) *redis.Client {
