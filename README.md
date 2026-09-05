@@ -387,13 +387,7 @@ a person on call.
 **Tracing stops at this process.** A request id ties one process's log lines together and no
 further. Closing it means OpenTelemetry, a collector, and somewhere to keep the traces.
 
-**There is no deploy.** No target, no versioned artefacts, no rollback. `docker compose up` is the
-whole deployment story.
-
 **Links are anonymous and unowned.** Anyone can create one, a single seeded administrator sees all
 of them, and nothing checks where a link points. A real shortener needs phishing and malware
 scanning at creation time, an abuse reporting path, and per-account ownership before it can be
 opened to the public. That is the single largest reason this is not.
-
-Also worth stating plainly, since they are easy to miss: p99 is estimated from bucket edges rather
-than measured exactly, metrics reset on restart, and the built-in dashboard shows one instance.
