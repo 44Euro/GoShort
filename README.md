@@ -1,5 +1,7 @@
 # GoShort
 
+*[อ่านฉบับภาษาไทย →](README.th.md)*
+
 A URL shortener built around one constraint: **`GET /:code` answers before anything else happens.**
 
 The redirect reads from Redis on a warm cache, replies `302`, and only then pushes the click event
