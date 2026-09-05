@@ -15,7 +15,12 @@ func registerAdminLinks(g fiber.Router, d Deps) {
 		if err != nil {
 			return err
 		}
-		series, err := d.stats.DailyForEachLink(c.UserContext(), repository.SeriesDays)
+		// ยอดคลิกด้านบนอ่านจากคอลัมน์ที่ denormalize ไว้ ราคาแทบเป็นศูนย์ ส่วนเส้นกราฟ
+		// 14 วันเป็น GROUP BY ที่กวาด click_events ทั้งตาราง แพงกว่ากันหลายร้อยเท่า
+		// cache เฉพาะอันหลัง หน้าทะเบียนจึง poll ถี่ ๆ ได้โดยยอดยังสดทุกครั้ง
+		series, err := cached(d, c.UserContext(), "admin:series:register", func() (map[uint][]int64, error) {
+			return d.stats.DailyForEachLink(c.UserContext(), repository.SeriesDays)
+		})
 		if err != nil {
 			return err
 		}
