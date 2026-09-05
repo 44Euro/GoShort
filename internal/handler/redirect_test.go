@@ -19,6 +19,23 @@ func TestRedirectSendsTheVisitorToTheDestination(t *testing.T) {
 	require.Equal(t, "https://go.dev/blog/pipelines", res.Header.Get("Location"))
 }
 
+// ปลายทางที่มี query string กับอักขระที่ต้อง encode คือจุดที่ URL เพี้ยนได้ง่ายที่สุด
+// และเป็นทางเดียวกับที่ referrer เคยถูก buffer ของ fasthttp เอากลับไปใช้ซ้ำจนสตริงต่อกัน
+// ต้องออกมาเหมือนที่ใส่เข้าไปทุก byte ทั้งตอน cache เย็นและตอน cache อุ่น
+func TestTheDestinationSurvivesQueryStringsAndEncoding(t *testing.T) {
+	app := newApp(t)
+	const long = "https://go.dev/blog/pipelines?utm_source=goshort&utm_medium=e2e&q=a%2Fb+c&ref=one/two/three"
+
+	_, created := createLink(t, app, `{"long_url":"`+long+`"}`)
+
+	for _, pass := range []string{"cold cache", "warm cache"} {
+		res, err := app.Test(httptest.NewRequest(http.MethodGet, "/"+created.Code, nil))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusFound, res.StatusCode, pass)
+		require.Equal(t, long, res.Header.Get("Location"), "the destination came back altered on the %s", pass)
+	}
+}
+
 func TestUnknownCodeIsNotFound(t *testing.T) {
 	app := newApp(t)
 
