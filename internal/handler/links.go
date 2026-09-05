@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -76,11 +75,4 @@ func linkCreated(d Deps, l model.Link) fiber.Map {
 
 func fail(c *fiber.Ctx, status int, msg string) error {
 	return c.Status(status).JSON(fiber.Map{"error": msg})
-}
-
-// ตอบตัวเลขศูนย์เวลาอ่านแหล่งไม่ได้คือการบอกว่า "ไม่มีอะไรเกิดขึ้น" ซึ่งคนละเรื่องกับ
-// "มองไม่เห็น" — หน้าจอเฝ้าระบบที่สับสนสองอย่างนี้แย่กว่าไม่มีหน้าจอเลย
-func unreachableSource(c *fiber.Ctx, err error) error {
-	slog.Warn("metrics source unreachable", "error", err)
-	return fail(c, fiber.StatusServiceUnavailable, "cannot reach the instance being watched")
 }

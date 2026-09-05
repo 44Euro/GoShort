@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -9,6 +10,14 @@ import (
 
 	"goshort/internal/middleware"
 )
+
+// ตอบตัวเลขศูนย์เวลาอ่านแหล่งไม่ได้คือการบอกว่า "ไม่มีอะไรเกิดขึ้น" ซึ่งคนละเรื่องกับ
+// "มองไม่เห็น" ยอดคลิกรวมมาจากฐานข้อมูลและยังอ่านได้อยู่ แต่ปลายทางนี้มีไว้รายงานเกจสด
+// ถ้าเกจอ่านไม่ได้ก็ทำงานไม่ได้ ตอบครึ่ง ๆ พร้อม 200 จะทำให้แยกไม่ออกว่าอะไรจริง
+func unreachableSource(c *fiber.Ctx, err error) error {
+	slog.Warn("metrics source unreachable", "error", err)
+	return fail(c, fiber.StatusServiceUnavailable, "cannot reach the instance being watched")
+}
 
 func registerOps(app *fiber.App, d Deps) {
 	// liveness ตอบจากตัวโปรเซสเท่านั้น ห้ามแตะ dependency: Postgres ที่ค้างอยู่
