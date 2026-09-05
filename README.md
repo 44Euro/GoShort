@@ -239,9 +239,10 @@ TEST_DATABASE_URL="postgres://goshort:goshort@localhost:5432/goshort?sslmode=dis
   go test -race -cover ./...
 ```
 
-> **The tests truncate whatever database you point them at.** `TEST_DATABASE_URL` above is the
-> same database `docker compose` uses, so running the suite empties the links you were looking at.
-> Stop the app first, or point the tests at a database of their own.
+> The suite creates a `goshort_test` schema and works only inside it, so pointing
+> `TEST_DATABASE_URL` at the database `docker compose` is already using leaves your links alone.
+> The `search_path` must name that schema and nothing else: add `public` to it and `AutoMigrate`
+> finds the real tables, skips creating its own, and the tests quietly write over live data.
 
 Integration tests skip themselves when `TEST_DATABASE_URL` is unset. There are four seams:
 
