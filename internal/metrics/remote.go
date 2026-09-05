@@ -18,24 +18,24 @@ import (
 // การดึงตรงแบบ hop เดียวนี้มีไว้ให้คอนโซลเฝ้า instance เดียวได้โดยไม่ต้องยก
 // Prometheus ขึ้นมาทั้งชุด ไม่ใช่ทางที่ควรทำตามเมื่อมี instance มากกว่านี้
 type Remote struct {
-	URL    string
-	Client *http.Client
+	url    string
+	client *http.Client
 }
 
 // timeout ต้องสั้นกว่าจังหวะ poll ของคอนโซล ไม่งั้น instance ที่ค้างจะลากหน้าจอค้างตาม
 const remoteTimeout = 1500 * time.Millisecond
 
 func NewRemote(url string) Remote {
-	return Remote{URL: url, Client: &http.Client{Timeout: remoteTimeout}}
+	return Remote{url: url, client: &http.Client{Timeout: remoteTimeout}}
 }
 
 func (r Remote) Summary(ctx context.Context) (Summary, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.url, nil)
 	if err != nil {
 		return Summary{}, err
 	}
 
-	res, err := r.Client.Do(req)
+	res, err := r.client.Do(req)
 	if err != nil {
 		return Summary{}, err
 	}
