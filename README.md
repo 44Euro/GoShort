@@ -140,21 +140,30 @@ processes whenever the database is merely *slow*, which is the failure it exists
 **Figures belong to a process, so the console has to be told which one to watch.** Under compose
 the redirects land on `api` and the console runs on `admin`; `METRICS_SOURCE_URL` points the latter
 at the former, and the same code that reads this process's registry computes the numbers either way
-— there is no second formula that could drift. Flip `GOSHORT_SYNC_MODE`, recreate, and the gauges
-move:
+— there is no second formula that could drift. With the console open at
+`http://localhost:8081/admin`, flip the mode and watch the gauges move:
 
-| | p99 | cache hit rate |
-|---|---:|---:|
-| `GOSHORT_SYNC_MODE=1` | 2.49 ms | 0.0% |
-| `GOSHORT_SYNC_MODE=0` | 0.90 ms | 100.0% |
+```bash
+GOSHORT_SYNC_MODE=1 docker compose up -d --force-recreate api admin
+for i in $(seq 1 300); do curl -s -o /dev/null localhost:8080/<code>; done   # p99 up, hit rate 0%
 
-Two hundred serial `curl`s each way — enough to see the difference move on screen, nowhere near a
-load test. The measured figures are in *Benchmark* below; `load-test/run.sh` starts its own process
-on `:8099` against a separate Redis database and is unaffected by any of this.
+GOSHORT_SYNC_MODE=0 docker compose up -d --force-recreate api admin
+for i in $(seq 1 300); do curl -s -o /dev/null localhost:8080/<code>; done   # p99 down, hit rate 100%
+```
 
-When the watched instance cannot be reached the console answers `503` and says so, and the gauges
-grey out. It never reports zeroes: zero means "nothing happened", which is a different thing from
-"cannot see", and a monitoring screen that confuses the two is worse than no screen.
+No figures are quoted for that because serial `curl` is not a measurement — the point is that the
+difference is visible on a console running in a different process from the one being measured. The
+measured numbers are in *Benchmark* below, where `load-test/run.sh` drives k6 against its own
+process on `:8099` and commits its raw output.
+
+When the watched instance cannot be reached the console answers `503`, says so in the status line,
+and greys out every panel; the figures read `—`, never `0`. Zero means "nothing happened", which is
+a different thing from "cannot see", and a monitoring screen that confuses the two is worse than no
+screen.
+
+The Prometheus text format is parsed with `expfmt`, which arrives with the metrics client already —
+`prometheus/common` moves from an indirect dependency to a direct one, and nothing new is added to
+the build.
 
 ---
 
